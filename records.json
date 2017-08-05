@@ -1,0 +1,38 @@
+{
+    "Records": [
+        {
+            "eventVersion": "2.0",
+            "eventSource": "aws:s3",
+            "awsRegion": "us-east-1",
+            "eventTime": "2017-08-05T00:57:39.562Z",
+            "eventName": "ObjectCreated:Put",
+            "userIdentity": {
+                "principalId": "AWS:AIDAIAFZPC7IKCT7YWRHC"
+            },
+            "requestParameters": {
+                "sourceIPAddress": "67.169.92.207"
+            },
+            "responseElements": {
+                "x-amz-request-id": "9B5E6ABBA3A4A254",
+                "x-amz-id-2": "fT5q/SmDaExEZ0sFbdFwCSccvNOI+4421nDULvJCyyiFxvTZJgbhcO56TwSpkBnhbc2ZM7L6LmI="
+            },
+            "s3": {
+                "s3SchemaVersion": "1.0",
+                "configurationId": "f742233c-5d48-407f-9793-a52873dc96c7",
+                "bucket": {
+                    "name": "pressminder",
+                    "ownerIdentity": {
+                        "principalId": "A1QXFPH4M3KAZR"
+                    },
+                    "arn": "arn:aws:s3:::pressminder"
+                },
+                "object": {
+                    "key": "test.json",
+                    "size": 104,
+                    "eTag": "eb9c0456d026d90d8ebab3aa1731f431",
+                    "sequencer": "005985180385CA4085"
+                }
+            }
+        }
+    ]
+}

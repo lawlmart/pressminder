@@ -1,0 +1,16 @@
+{
+  "name": "PressMinder",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "dependencies": {
+    "@heroku/kinesis": "^2.0.2",
+    "aws-sdk": "^2.94.0",
+    "aws-xray-sdk": "^1.1.2",
+    "cheerio": "^1.0.0-rc.2",
+    "pg": "^7.1.0",
+    "request": "^2.81.0",
+    "request-promise": "^4.2.1",
+    "unfluff": "^1.1.0"
+  }
+}

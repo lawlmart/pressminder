@@ -1,0 +1,7 @@
+{
+  "lambda": {
+    "role": "PressMinder-executor",
+    "name": "PressMinder",
+    "region": "us-east-1"
+  }
+}
