@@ -1,0 +1,11 @@
+{
+  "lambda": {
+    "role": "PressMinderApi-executor",
+    "name": "PressMinderApi",
+    "region": "us-east-1"
+  },
+  "api": {
+    "id": "idifzh83l0",
+    "module": "bin/api"
+  }
+}

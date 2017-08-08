@@ -1,18 +1,22 @@
 import kinesis from '@heroku/kinesis'
 import * as tasks from './tasks'
 
-const sendToStream = (stream, data) => {
+const sendToStream = (stream, type, payload) => {
   return new Promise((resolve, reject) => {
+    const base64data = new Buffer(
+      JSON.stringify({
+        type,
+        payload
+      })
+    ).toString('base64')
     const params = {
       Records: [{
-        Data: new Buffer(JSON.stringify(data)).toString('base64'),
-        PartitionKey: "CONSTANT"
+        Data: base64data,
+        PartitionKey: type
       }],
       StreamName: stream
     };
 
-    console.log("Sending params " + JSON.stringify(params) + " to kinesis")
-    
     kinesis.request('PutRecords', params, { logger: { log: function (m) { } } }, function (err, data) {
       if (err) {
         console.log(err, err.stack); // an error occurred
@@ -38,9 +42,7 @@ export function parseEvents(event) {
     const promises = []
     for (let record of event['Records']) {
       if ('kinesis' in record) {
-        console.log("Found kinesis payload " + JSON.stringify(record['kinesis']))
         let string = Buffer.from(record['kinesis']['data'], 'base64').toString("utf8")
-        console.log("Decoded kinesis params " + string)
         let data = JSON.parse(string)
         addEvent(data.type, data.payload)
       } else {
@@ -77,16 +79,14 @@ export async function executeEvents(name, payloads) {
   } else if (name == 'scan_complete') {
     f = makeMulti(tasks.scanComplete)
   }
-  return await f(payloads)
+  return f(payloads)
 }
 
 export async function trigger(name, data) {
   if (process.env.NODE_ENV == 'production') {
-    return await sendToStream('articles', {
-      type: name,
-      payload: data
-    })
+    return await sendToStream('articles', name, data)
   } else {
+    console.log("Executing event " + name + " immediately")
     return await executeEvents(name, [data]);
   }
 }

@@ -35,10 +35,6 @@ export async function scanPage(data) {
     }
   })
 
-  if (process.env.NODE_ENV != 'production') {
-    urls = urls.slice(0, 3)
-  }
-
   console.log(scanId + ": Found " + urls.length.toString() + " urls on page " + data.url)
   const redisKey = "pressminder:scan:" + scanId
   await redisClient.setAsync(redisKey, JSON.stringify({
@@ -53,26 +49,64 @@ export async function scanPage(data) {
 }
 
 export async function retrieveArticle(input) {
-  const redisKey = "pressminder:scan:" + input._scanId
-  await redisClient.incrAsync(redisKey + ":retrieved")
+  try {
+    const redisKey = "pressminder:scan:" + input._scanId
+    await redisClient.incrAsync(redisKey + ":retrieved")
 
-  const htmlString = await request({
-    uri: input.url,
-    headers: {
-      "User-Agent": "mozilla/5.0 (iphone; cpu iphone os 7_0_2 like mac os x) applewebkit/537.51.1 (khtml, like gecko) version/7.0 mobile/11a501 safari/9537.53",
-      referer: "https://www.google.com/"
+    console.log("Requesting " + input.url)
+    const lazy = unfluff.lazy(await request({
+      uri: input.url,
+      headers: {
+        referer: "https://www.google.com/"
+      }
+    }))
+
+    const author =  _(lazy.author())
+                    .flatMap(a => a ? a.split(', ') : [])
+                    .flatMap(a => a ? a.split(' and ') : [])
+                    .map(a => a.trim())
+                    .filter(x => x.indexOf('.com') === -1)
+                    .filter(x => x.indexOf('.www') === -1)
+                    .value()
+
+    let keywords = lazy.keywords()
+    if (keywords) {
+      keywords = keywords.split(',')
     }
-  })
-  const output =  unfluff(htmlString)
-  console.log("Retrieved article " + output.title)
-  output._scanId = input._scanId
-  output._scanUrl = input._scanUrl
-  output._foundUrl = input.url
-  
-  await redisClient.incrAsync(redisKey + ":found")
-  await trigger('article', output)
 
-  return output
+    const output = {
+      author,
+      keywords,
+      title: lazy.title(),
+      canonicalLink: lazy.canonicalLink(),
+      published: chrono.parseDate(lazy.date()),
+      links: lazy.links().map(l => l.href),
+      _scanId: input._scanId,
+      _scanUrl: input._scanUrl,
+      _foundUrl: input.url
+    }
+    console.log(output)
+    console.log("Requesting mobile " + input.url)
+    const lazyMobile = unfluff.lazy(await request({
+      uri: input.url,
+      headers: {
+        "User-Agent": "mozilla/5.0 (iphone; cpu iphone os 7_0_2 like mac os x) applewebkit/537.51.1 (khtml, like gecko) version/7.0 mobile/11a501 safari/9537.53",
+        referer: "https://www.google.com/"
+      }
+    }))
+    output.text = lazyMobile.text()
+    output.image = lazyMobile.image()
+    output.tags = lazyMobile.tags()
+    
+    console.log("Retrieved article " + output.title + " by " + output.author + "  (" + output.text.length + ") chars")
+
+    await redisClient.incrAsync(redisKey + ":found")
+    await trigger('article', output)
+
+    return output
+  } catch (err) {
+    console.log("Failed to retrieve article " + input.url + ": " + err)
+  }
 }
 
 async function saveVersion(article, db) {
@@ -134,10 +168,10 @@ export async function processArticles(articles) {
   await client.connect()
 
   for (let data of articles) {
-    const res = await client.query('INSERT INTO article (url, title, author, published) \
-              VALUES ($1, $2, $3, $4) \
+    const res = await client.query('INSERT INTO article (url, title, author, published, keywords, links) \
+              VALUES ($1, $2, $3, $4, $5, $6) \
               ON CONFLICT (url) DO UPDATE SET last_checked=now() RETURNING id', 
-              [data.canonicalLink, data.title, data.author, chrono.parseDate(data.date)])
+              [data.canonicalLink, data.title, data.author, data.published, data.keywords, data.links])
     const id = res.rows[0].id
     console.log("Article (" + id.toString() + ") " + data.canonicalLink + " saved")
     data.id = id

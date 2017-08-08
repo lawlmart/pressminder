@@ -3,5 +3,8 @@
     "role": "PressMinder-executor",
     "name": "PressMinder",
     "region": "us-east-1"
+  },
+  "api": {
+    "id": "vgxqu9q3ve"
   }
 }

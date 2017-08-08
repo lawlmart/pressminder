@@ -1,8 +1,8 @@
 import API from 'claudia-api-builder'
-import trigger from 'events'
+import  AWSXRay from 'aws-xray-sdk'
 
 const api = new API()
 
-api.get('/', () => 'test')
+api.get('/', () => 'hello world!')
 
 module.exports = api
