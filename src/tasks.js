@@ -47,6 +47,7 @@ export async function scanPage(data) {
       page: data.url
     })
   }
+  console.log("Finished scanning " + data.url)
   await client.end
 }
 
@@ -121,7 +122,8 @@ export async function checkArticles() {
   const client = new Client()
   await client.connect()
   const res = await client.query("SELECT url FROM article \
-    WHERE (last_checked < now() - interval '1 hour' AND first_checked > now() - interval '1 day') OR \
+    WHERE (last_checked < now() - interval '5 minute' AND first_checked > now() - interval '1 hour') OR \
+    (last_checked < now() - interval '1 hour' AND first_checked > now() - interval '1 day') OR \
     (last_checked < now() - interval '1 day' AND first_checked > now() - interval '1 week') OR \
     (last_checked < now() - interval '1 week')")
 
@@ -140,7 +142,6 @@ export async function processArticles(articles) {
   await client.connect()
 
   for (let article of articles) {
-    console.log(article)
     const res = await client.query('INSERT INTO article (url) \
               VALUES ($1) \
               ON CONFLICT (url) DO UPDATE SET last_checked=now()', 
