@@ -4,5 +4,10 @@ node_js:
 cache:
   directories:
     - node_modules
+before_install:
+  - pip install --user awscli
+  - export PATH=$PATH:$HOME/.local/bin
 script:
+  - aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID --profile lawlmart
+  - aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY --profile lawlmart
   - yarn run update && yarn run update-api
