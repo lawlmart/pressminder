@@ -1,7 +1,6 @@
-language: node_js
-node_js:
-  - 6
+language: python
 cache:
+  pip: true
   directories:
     - node_modules
 before_install:
