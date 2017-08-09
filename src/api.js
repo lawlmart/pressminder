@@ -25,37 +25,37 @@ const getArticles = async function() {
   const client = new Client()
   await client.connect()
 
-  const res = await client.query("SELECT article.id, article.url, article.title, placement.started, \
-                                  version.text, version.timestamp \
-                                  FROM article \
-                                  LEFT JOIN placement ON placement.article_id = article.id \
-                                  LEFT JOIN version ON version.article_id = article.id \
-                                  AND placement.ended IS NULL \
-                                  WHERE placement.started IS NOT NULL and placement.ended IS NULL \
-                                  ORDER BY placement.started DESC, version.timestamp ASC")
+  const res = await client.query("SELECT version.url, version.title, p.started, \
+                                  version.text, version.timestamp, version.authors \
+                                  FROM article, version, \
+                                  (SELECT placement.url, MAX(placement.started) as started FROM placement WHERE placement.ended IS NULL GROUP BY placement.url) p \
+                                  WHERE p.url = article.url AND version.url = p.url \
+                                  ORDER BY p.started DESC, version.timestamp ASC")
   
   let lastId = null  
   const articles = []  
 
   for (const row of res.rows) {
-    if (row.id != lastId) {
+    if (row.url != lastId) {
       articles.push({
-        id: row.id,
         url: row.url,
-        title: row.title,
         since:  row.started,
         versions: [{
           text: row.text,
-          timestamp: row.timestamp
+          timestamp: row.timestamp,
+          authors: row.authors,
+          title: row.title,
         }]
       })
     } else {
       articles.slice(-1)[0].versions.push({
         test: row.text,
-        timestamp: row.timestamp
+        timestamp: row.timestamp,
+        authors: row.authors,
+        title: row.title
       })
     }
-    lastId = row.id
+    lastId = row.url
   }
 
   await client.end()
@@ -65,7 +65,7 @@ const getArticles = async function() {
 api.get('/', async (request) => {
   const articles = await getArticles()
   return renderPage(articles.map(a => "<div><a href='" + a.url + "'>" +
-    a.title + "</a> " + 
+    (a.versions.length ? a.versions.slice(-1)[0].title : 'loading ...') + "</a> " + 
     "<span>" + (a.since ? moment(a.since).fromNow() : '') + "</span>" +
     a.versions.map((v, idx) => "<a href='/article/" + a.id + "/version/" + idx.toString() + "'>" + moment(v.timestamp).fromNow() + "</a>").join("") +
     "</div>").join(""))

@@ -3,6 +3,8 @@ console.log("Running tests")
 
 process.on('unhandledRejection', r => console.log(r));
 
+trigger('check')
+
 trigger('scan', {
     "url": "https://nytimes.com",
     "linkRegex": ".*nytimes.com/20[0-9][0-9]/.*"

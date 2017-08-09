@@ -85,11 +85,11 @@ export async function retrieveArticle(input) {
       title: lazy.title(),
       url: lazy.canonicalLink(),
       published: chrono.parseDate(lazy.date()),
-      links: lazy.links().map(l => l.href),
+      links: lazy.links().map(l => l.href).filter(x => x.indexOf('.') != -1),
       _placementUrl: input.url,
       _placementPage: input.page
     }
-
+    console.log(output)
     console.log("Requesting mobile " + input.url)
     const lazyMobile = unfluff.lazy(await request({
       uri: input.url,
@@ -102,8 +102,8 @@ export async function retrieveArticle(input) {
     output.image = lazyMobile.image()
     output.tags = lazyMobile.tags()
     
-    console.log("Retrieved article " + output.title + " by " + output.author + "  (" + output.text.length + ") chars")
-
+    console.log("Retrieved article " + output.title + " by " + output.authors.join(", ") + "  (" + output.text.length + ") chars")
+    console.log(output)
     await trigger('article', output)
 
     return output
@@ -129,7 +129,7 @@ export async function checkArticles() {
   const res = await client.query("SELECT url FROM article \
     WHERE (last_checked < now() - interval '1 hour' AND first_checked > now() - interval '1 day') OR \
     (last_checked < now() - interval '1 day' AND first_checked > now() - interval '1 week') OR \
-    (last_checked < now() - interval '1 week'")
+    (last_checked < now() - interval '1 week')")
 
   for (const row in res.rows) {
     console.log("Requesting update of " + row.url)
@@ -146,16 +146,19 @@ export async function processArticles(articles) {
   await client.connect()
 
   for (let article of articles) {
+    console.log(article)
     const res = await client.query('INSERT INTO article (url) \
               VALUES ($1) \
               ON CONFLICT (url) DO UPDATE SET last_checked=now()', 
               [article.url])
+    
     console.log("Article " + article.url + " saved")
 
     if (article._placementPage && article._placementUrl) {
       await client.query('UPDATE placement SET url = $1 \
                           WHERE link = $2 AND page = $3', 
                           [article.url, article._placementUrl, article._placementPage])
+      console.log("Placement url " + article.url + " updated")
     }
 
     if (article.text) {
@@ -165,6 +168,8 @@ export async function processArticles(articles) {
                         VALUES ($1, $2, $3, $4, $5, $6, $7)', 
                         [article.url, article.text, article.title, article.links, 
                           article.authors, article.keywords, article.published])
+
+        console.log("Version " + article.url + " added")
       }
     }
   }
