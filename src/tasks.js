@@ -32,8 +32,8 @@ export async function scanPage(data) {
                       AND page = $1', [data.url])
 
   for (const url of urls) {
-    await client.query('INSERT INTO placement (page, link, started) \
-                        VALUES ($1, $2, now()) \
+    await client.query('INSERT INTO placement (page, link, started, new) \
+                        VALUES ($1, $2, now(), TRUE) \
                         ON CONFLICT (page, link) DO UPDATE SET ended = NULL', [data.url, url])
   }
 
@@ -57,6 +57,7 @@ export async function retrieveArticle(input) {
     const lazy = unfluff.lazy(await request({
       uri: input.url,
       headers: {
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.90 Safari/537.36",
         referer: "https://www.google.com/"
       }
     }))
@@ -142,8 +143,8 @@ export async function processArticles(articles) {
   await client.connect()
 
   for (let article of articles) {
-    const res = await client.query('INSERT INTO article (url) \
-              VALUES ($1) \
+    const res = await client.query('INSERT INTO article (url, last_checked, first_checked) \
+              VALUES ($1, now(), now()) \
               ON CONFLICT (url) DO UPDATE SET last_checked=now()', 
               [article.url])
     
