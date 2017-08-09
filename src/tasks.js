@@ -9,12 +9,8 @@ const kinesis = require('@heroku/kinesis')
 const uuid = require('uuid/v4');
 const chrono = require('chrono-node')
 const _ = require('lodash')
-const redis = Promise.promisifyAll(require("redis"));
-import { trigger } from './events'
 
-const redisClient = redis.createClient({
-  host: process.env.REDIS_HOST || 'localhost'
-})
+import { trigger } from './events'
 
 export async function scanPage(data) {
 
