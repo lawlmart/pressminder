@@ -32,7 +32,6 @@ export async function scanPage(data) {
                       AND page = $1', [data.url])
 
   for (const url of urls) {
-    console.log("Storing placement for " + url)
     await client.query('INSERT INTO placement (page, link, started) \
                         VALUES ($1, $2, now()) \
                         ON CONFLICT (page, link) DO UPDATE SET ended = NULL', [data.url, url])
@@ -43,7 +42,6 @@ export async function scanPage(data) {
 
   for (const row of res.rows) {
     console.log("Found new placement " + row.url)
-
     await trigger('url', {
       url: row.link,
       page: data.url
@@ -85,7 +83,7 @@ export async function retrieveArticle(input) {
       _placementUrl: input.url,
       _placementPage: input.page
     }
-    console.log(output)
+
     console.log("Requesting mobile " + input.url)
     const lazyMobile = unfluff.lazy(await request({
       uri: input.url,
@@ -159,7 +157,7 @@ export async function processArticles(articles) {
 
     if (article.text) {
       const versions = await getVersions(article.url, client)
-      if (!versions.length || versions.slice(-1)[0].text  != article.text) {
+      if (!versions.length || versions.slice(-1)[0].text != article.text) {
         await client.query('INSERT INTO version (url, text, title, links, authors, keywords, published) \
                         VALUES ($1, $2, $3, $4, $5, $6, $7)', 
                         [article.url, article.text, article.title, article.links, 
