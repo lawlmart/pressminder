@@ -12,7 +12,7 @@ const sendToStream = (stream, type, payload) => {
     const params = {
       Records: [{
         Data: base64data,
-        PartitionKey: type
+        PartitionKey: Math.random().toString()
       }],
       StreamName: stream
     };
@@ -76,9 +76,9 @@ export async function executeEvents(name, payloads) {
     f = makeMulti(tasks.retrieveArticle)
   } else if (name == 'scan') {
     f = makeMulti(tasks.scanPage)
-  } else if (name == 'scan_complete') {
-    f = makeMulti(tasks.scanComplete)
-  }
+  } else if (name == 'check') {
+    f = tasks.checkArticles
+  } 
   return f(payloads)
 }
 

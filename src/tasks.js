@@ -4,7 +4,7 @@ const cheerio = require('cheerio')
 const fs = require('fs')
 const unfluff = require('unfluff')
 const S3 = require('aws-sdk/clients/s3');
-const { Client, Pool } = require('pg')
+const { Client } = require('pg')
 const kinesis = require('@heroku/kinesis')
 const uuid = require('uuid/v4');
 const chrono = require('chrono-node')
@@ -17,9 +17,6 @@ const redisClient = redis.createClient({
 })
 
 export async function scanPage(data) {
-  const scanId = uuid()
-  data.id = scanId
-  console.log(scanId + ": Processing page " + JSON.stringify(data))
 
   const htmlString = await request(data.url)
   const $ = cheerio.load(htmlString)
@@ -27,32 +24,40 @@ export async function scanPage(data) {
   $('a').each((i, elem) => {
     const url = $(elem).attr('href');
     if (url && url.match(new RegExp(data.linkRegex, 'i'))) {
-      urls.push({
-        _scanId: scanId,
-        _scanUrl: data.url, 
-        url: url
-      })
+      urls.push(url)
     }
   })
 
-  console.log(scanId + ": Found " + urls.length.toString() + " urls on page " + data.url)
-  const redisKey = "pressminder:scan:" + scanId
-  await redisClient.setAsync(redisKey, JSON.stringify({
-    timestamp: Math.round(Date.now() / 1000)
-  }))
-  await redisClient.setAsync(redisKey + ":urls", urls.length)
+  const client = new Client()
+  await client.connect()
 
-  for (let url of urls) {
-    await trigger('url', url)
+  await client.query('UPDATE placement SET ended = now(), new = FALSE \
+                      WHERE ended IS NULL \
+                      AND page = $1', [data.url])
+
+  for (const url of urls) {
+    console.log("Storing placement for " + url)
+    await client.query('INSERT INTO placement (page, link, started) \
+                        VALUES ($1, $2, now()) \
+                        ON CONFLICT (page, link) DO UPDATE SET ended = NULL', [data.url, url])
   }
-  return urls
+
+  const res = await client.query('SELECT placement.link FROM placement \
+                            WHERE new = TRUE AND ended IS NULL AND placement.page = $1', [data.url])
+
+  for (const row of res.rows) {
+    console.log("Found new placement " + row.url)
+
+    await trigger('url', {
+      url: row.link,
+      page: data.url
+    })
+  }
+  await client.end
 }
 
 export async function retrieveArticle(input) {
   try {
-    const redisKey = "pressminder:scan:" + input._scanId
-    await redisClient.incrAsync(redisKey + ":retrieved")
-
     console.log("Requesting " + input.url)
     const lazy = unfluff.lazy(await request({
       uri: input.url,
@@ -61,7 +66,7 @@ export async function retrieveArticle(input) {
       }
     }))
 
-    const author =  _(lazy.author())
+    const authors =  _(lazy.author())
                     .flatMap(a => a ? a.split(', ') : [])
                     .flatMap(a => a ? a.split(' and ') : [])
                     .map(a => a.trim())
@@ -75,17 +80,16 @@ export async function retrieveArticle(input) {
     }
 
     const output = {
-      author,
+      authors,
       keywords,
       title: lazy.title(),
-      canonicalLink: lazy.canonicalLink(),
+      url: lazy.canonicalLink(),
       published: chrono.parseDate(lazy.date()),
       links: lazy.links().map(l => l.href),
-      _scanId: input._scanId,
-      _scanUrl: input._scanUrl,
-      _foundUrl: input.url
+      _placementUrl: input.url,
+      _placementPage: input.page
     }
-    console.log(output)
+
     console.log("Requesting mobile " + input.url)
     const lazyMobile = unfluff.lazy(await request({
       uri: input.url,
@@ -100,109 +104,68 @@ export async function retrieveArticle(input) {
     
     console.log("Retrieved article " + output.title + " by " + output.author + "  (" + output.text.length + ") chars")
 
-    await redisClient.incrAsync(redisKey + ":found")
     await trigger('article', output)
 
     return output
   } catch (err) {
     console.log("Failed to retrieve article " + input.url + ": " + err)
+    console.error(err)
   }
 }
 
-async function saveVersion(article, db) {
-  const res = await db.query('SELECT text FROM version WHERE article_id = $1 ORDER BY timestamp DESC LIMIT 1', [article.id])
-  if (res.rows.length) {
-    const text = res.rows[0].text
-    if (text == article.text) {
-      return
-    }
-  }
-  console.log("Saving version of article " + article.id.toString())
-  await db.query('INSERT INTO version (article_id, text) VALUES ($1, $2)', [article.id, article.text])
+export async function getVersions(url, client) {
+  const res = await client.query("SELECT text FROM version \
+                                  WHERE url = $1 \
+                                  ORDER BY timestamp ASC",
+                                  [url])
+  return res.rows.map(r => { return {
+    text: r.text
+  }})
 }
 
-export async function scanComplete(data) {
-  const { id, url, articles } = data
-
-  console.log("Completed scan of " + url + " (" + id + ")")
-
+export async function checkArticles() {
   const client = new Client()
   await client.connect()
+  const res = await client.query("SELECT url FROM article \
+    WHERE (last_checked < now() - interval '1 hour' AND first_checked > now() - interval '1 day') OR \
+    (last_checked < now() - interval '1 day' AND first_checked > now() - interval '1 week') OR \
+    (last_checked < now() - interval '1 week'")
 
-  const results = await client.query('SELECT article_id FROM placement \
-                                  WHERE ended IS NULL \
-                                  AND url = $1', [url])
-  
-
-  const promises = []
-  const existingIds = results.rows.map(row => parseInt(row.article_id))
-  const newIds = Object.keys(articles).map(key => parseInt(key))
-
-  for (const existingId of existingIds) {
-    if (newIds.indexOf(existingId) === -1) {
-      console.log("Ended placement for article " + existingId.toString() + " at " + url)
-
-      promises.push(client.query('UPDATE placement SET ended=now() \
-      WHERE ended IS NULL \
-      AND article_id = $1 \
-      AND url = $2', [existingId, url]))
-    }
+  for (const row in res.rows) {
+    console.log("Requesting update of " + row.url)
+    await trigger('url', {
+      url: row.url
+    })
   }
 
-  for (const newId of newIds) {
-    if (existingIds.indexOf(newId) === -1) {
-      console.log("New placement for article " + newId.toString() + " at " + url)
-
-      promises.push(
-        client.query('INSERT INTO placement (article_id, url, started) VALUES ($1, $2, now())', [newId, url])
-      )
-    }
-  }
-  return Promise.all(promises)
-
-  await client.end()
+  client.end()
 }
 
 export async function processArticles(articles) {
   const client = new Client()
   await client.connect()
 
-  for (let data of articles) {
-    const res = await client.query('INSERT INTO article (url, title, author, published, keywords, links) \
-              VALUES ($1, $2, $3, $4, $5, $6) \
-              ON CONFLICT (url) DO UPDATE SET last_checked=now() RETURNING id', 
-              [data.canonicalLink, data.title, data.author, data.published, data.keywords, data.links])
-    const id = res.rows[0].id
-    console.log("Article (" + id.toString() + ") " + data.canonicalLink + " saved")
-    data.id = id
-    if (data.text) {
-      await saveVersion(data, client)
+  for (let article of articles) {
+    const res = await client.query('INSERT INTO article (url) \
+              VALUES ($1) \
+              ON CONFLICT (url) DO UPDATE SET last_checked=now()', 
+              [article.url])
+    console.log("Article " + article.url + " saved")
+
+    if (article._placementPage && article._placementUrl) {
+      await client.query('UPDATE placement SET url = $1 \
+                          WHERE link = $2 AND page = $3', 
+                          [article.url, article._placementUrl, article._placementPage])
     }
 
-    const EXPIRATION = 3600
-    const redisKey = "pressminder:scan:" + data._scanId
-    const results = await redisClient.multi()
-    .hset(redisKey + ":articles", data.id, JSON.stringify(data))
-    .incr(redisKey + ":processed")
-    .get(redisKey + ":found")
-    .get(redisKey + ":retrieved")
-    .get(redisKey + ":urls")
-    .hgetall(redisKey + ":articles")
-    .expire(redisKey, EXPIRATION)
-    .expire(redisKey + ":articles", EXPIRATION)
-    .expire(redisKey + ":processed", EXPIRATION)
-    .execAsync()
-
-    if (results[1] == results[2] && results[3] == results[4]) {
-      let articles = results[5]
-      for (let key in articles) {
-        articles[key] = JSON.parse(articles[key])
+    if (article.text) {
+      const versions = await getVersions(article.url, client)
+      if (!versions.length || versions.slice(-1)[0].text  != article.text) {
+        await client.query('INSERT INTO version (url, text, title, links, authors, keywords, published) \
+                        VALUES ($1, $2, $3, $4, $5, $6, $7)', 
+                        [article.url, article.text, article.title, article.links, 
+                          article.authors, article.keywords, article.published])
       }
-      await trigger('scan_complete', {
-        articles,
-        id: data._scanId,
-        url: data._scanUrl
-      })
     }
   }
   await client.end()
