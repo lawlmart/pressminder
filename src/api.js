@@ -80,13 +80,13 @@ api.get('/', async (request) => {
 }, { success: { contentType: 'text/html'}});
 
 api.get('/logs', async (request) => {
-  const name = request.queryString.name
+  const name = decodeURIComponent(request.queryString.name)
   const redisClient = redis.createClient({
     host: process.env.REDIS_HOST || 'localhost'
   })
   const logs = await redisClient.lrangeAsync("pressminder:log:" + name, 0, -1)
   await redisClient.quitAsync()
-  return renderPage(logs.map(log => log.join("<br/>")))
+  return renderPage("<h1>" + name + "</h1>" + logs.map(log => log.join("<br/>")))
 }, { success: { contentType: 'text/html'}});
 
 api.get('/article/{id}', async (request) => {
