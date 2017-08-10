@@ -1,16 +1,16 @@
+const AWSXRay = require('aws-xray-sdk');
+let Client
+if (process.env.NODE_ENV == 'production') {
+  AWSXRay.captureHTTPsGlobal(require('http'));
+  Client = AWSXRay.capturePostgres(require('pg')).Client
+} else {
+  Client = require('pg').Client
+}
 const Promise = require("bluebird");
 const request = require('request-promise')
 const cheerio = require('cheerio')
 const fs = require('fs')
 const unfluff = require('unfluff')
-const S3 = require('aws-sdk/clients/s3');
-const AWSXRay = require('aws-xray-sdk');
-let Client
-if (process.env.NODE_ENV == 'production') {
-  Client = AWSXRay.capturePostgres(require('pg')).Client
-} else {
-  Client = require('pg').Client
-}
 const kinesis = require('@heroku/kinesis')
 const uuid = require('uuid/v4');
 const chrono = require('chrono-node')
@@ -24,7 +24,7 @@ function startSegment(name, args) {
       resolve()
       return
     }
-    AWSXRay.captureAsyncFunc('send', function(subsegment) {
+    AWSXRay.captureAsyncFunc(name, function(subsegment) {
       for (let key of Object.keys(args)) {
         subsegment.addAnnotation(key, args[key]);
       }
@@ -82,6 +82,7 @@ export async function scanPage(data) {
     }
     console.log("Found " + res.rows.length + " new links")
   } catch (err) {
+    endSegment(segment)
     console.error(err)
   } finally {
     endSegment(segment)
@@ -95,6 +96,7 @@ export async function retrieveArticle(input) {
     return
   }
   
+  const segment = await startSegment('url', {url: data.url})
   try {
     console.log("Requesting " + JSON.stringify(input))
     const lazy = unfluff.lazy(await request({
@@ -153,9 +155,11 @@ export async function retrieveArticle(input) {
     }
     
     await trigger('article', output)
+    endSegment(segment)
   } catch (err) {
     console.log("Failed to retrieve article " + input.url + ": " + err)
     console.error(err)
+    endSegment(segment)
   }
 }
 
@@ -172,6 +176,8 @@ export async function getVersions(url, client) {
 export async function checkArticles() {
   const client = new Client()
   await client.connect()
+
+  const segment = await startSegment('check', {url: data.url})
   try {
     const res = await client.query("SELECT url FROM article \
       WHERE (last_checked < now() - interval '1 hour' AND first_checked > now() - interval '1 day') OR \
@@ -186,8 +192,10 @@ export async function checkArticles() {
     }
   }
   catch (err) {
+    endSegment(segment)
     console.error(err)
   } finally {
+    endSegment(segment)
     await client.end()
   }
 }
@@ -195,6 +203,8 @@ export async function checkArticles() {
 export async function processArticles(articles) {
   const client = new Client()
   await client.connect()
+
+  const segment = await startSegment('article', {url: data.url})
   try {
     for (let article of articles) {
       const res = await client.query('INSERT INTO article (url, last_checked, first_checked) \
@@ -227,8 +237,10 @@ export async function processArticles(articles) {
     }
   }
   catch (err) {
+    endSegment(segment)
     console.error(err)
   } finally {
+    endSegment(segment)
     await client.end()
   }
 }
