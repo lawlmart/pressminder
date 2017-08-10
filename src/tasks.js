@@ -136,12 +136,6 @@ export async function retrieveArticle(input) {
     if (!output.title) {
       log(input.url, "Invalid, no title found.")
       return
-    } else if (!output.published) {
-      log(input.url, "Invalid, no published date found.")
-      return
-    } else if (!authors.length) {
-      log(input.url, "Invalid, no authors found.")
-      return
     } else if (!output.url) {
       log(input.url, "Invalid, no canonical url found.")
       return
