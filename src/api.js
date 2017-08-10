@@ -69,7 +69,9 @@ const getArticles = async function(count, offset) {
 }
 
 api.get('/', async (request) => {
-  const articles = await getArticles(20, 0)
+  const count = request.queryString.count || 50
+  const page = request.queryString.page || 1
+  const articles = await getArticles(count, (page-1) * count)
   return renderPage(articles.map(a => "<div><a href='" + a.url + "'>" +
     (a.versions.length ? a.versions.slice(-1)[0].title : 'loading ...') + "</a> " + 
     "<span>" + (a.since ? moment(a.since).fromNow() : '') + "</span>" +
