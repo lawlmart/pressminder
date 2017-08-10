@@ -86,7 +86,7 @@ export async function retrieveArticle(input) {
       _placementPage: input.page
     }
 
-    if (!output.title || !output.published) {
+    if (!output.title || !output.published || !authors.length) {
       console.log("Invalid article found: " + JSON.stringify(output))
       return
     }
