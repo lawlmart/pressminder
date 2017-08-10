@@ -29,7 +29,7 @@ const getArticles = async function() {
                                   version.text, version.timestamp, version.authors \
                                   FROM article, version, \
                                   (SELECT placement.url, MAX(placement.started) as started FROM placement WHERE placement.ended IS NULL GROUP BY placement.url) p \
-                                  WHERE p.url = article.url AND version.url = p.url \
+                                  WHERE p.url = article.url AND version.url = p.url AND p.url IS NOT NULL \
                                   ORDER BY p.started DESC, version.timestamp ASC")
   
   let lastId = null  
