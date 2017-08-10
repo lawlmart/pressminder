@@ -32,6 +32,7 @@ export function parseEvents(event) {
   const events = {}
 
   function addEvent(name, payload) {
+    payload = payload || {}
     if (name in events) {
       events[name].push(payload)
     } else {
