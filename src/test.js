@@ -16,7 +16,7 @@ trigger('scan', {
 
 trigger('scan', {
   "url": "https://washingtonpost.com",
-  "linkRegex": ".*washingtonpost.com/(news|politics|opinions|blogs|sports|local|national|world|business|tech|lifestyle|entertainment|outlook)/.+"
+  "linkRegex": ".*washingtonpost.com/.*/20[0-9][0-9]/.*"
 })
 .then(() => {
 console.log("Finished scanning wpo")

@@ -21,7 +21,7 @@ const renderPage = function (body) {
   `
 };
 
-const getArticles = async function() {
+const getArticles = async function(count, offset) {
   const client = new Client()
   await client.connect()
 
@@ -30,7 +30,7 @@ const getArticles = async function() {
                                   FROM article, version, \
                                   (SELECT placement.url, MAX(placement.started) as started FROM placement WHERE placement.ended IS NULL GROUP BY placement.url) p \
                                   WHERE p.url = article.url AND version.url = p.url AND p.url IS NOT NULL \
-                                  ORDER BY p.started DESC, version.timestamp ASC")
+                                  ORDER BY p.started DESC, version.timestamp ASC LIMIT $1 OFFSET $2", [count, offset])
   
   let lastId = null  
   const articles = []  
@@ -63,7 +63,7 @@ const getArticles = async function() {
 }
 
 api.get('/', async (request) => {
-  const articles = await getArticles()
+  const articles = await getArticles(20, 0)
   return renderPage(articles.map(a => "<div><a href='" + a.url + "'>" +
     (a.versions.length ? a.versions.slice(-1)[0].title : 'loading ...') + "</a> " + 
     "<span>" + (a.since ? moment(a.since).fromNow() : '') + "</span>" +
