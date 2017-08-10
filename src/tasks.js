@@ -42,8 +42,11 @@ export async function scanPage(data) {
   const $ = cheerio.load(htmlString)
   let urls = []
   $('a').each((i, elem) => {
-    const url = $(elem).attr('href');
+    let url = $(elem).attr('href');
     if (url && url.match(new RegExp(data.linkRegex, 'i'))) {
+      if (url.indexOf('http') === -1) {
+        url = data.url + url 
+      }
       urls.push(url)
     }
   })
@@ -67,9 +70,6 @@ export async function scanPage(data) {
 
     for (const row of res.rows) {
       let link = row.link
-      if (link.indexOf('http') === -1) {
-        link = data.url + link 
-      }
       console.log("Found new placement " + link)
       await trigger('url', {
         url: link,
@@ -211,10 +211,14 @@ export async function processArticles(articles) {
       console.log("Saved " + JSON.stringify(article.url))
 
       if (article._placementPage && article._placementUrl) {
-        await client.query('UPDATE placement SET url = $1 \
+        const updateResult = await client.query('UPDATE placement SET url = $1 \
                             WHERE link = $2 AND page = $3', 
                             [article.url, article._placementUrl, article._placementPage])
-        console.log("Placement url " + article.url + " updated")
+        if (updateResult.rowCount) {
+          console.log("Saved placement url " + article.url)
+        } else {
+          console.log("Failed to update placement link " + article._placementUrl + " on " + article._placementPage)
+        }
       }
 
       if (article.text) {
@@ -223,7 +227,7 @@ export async function processArticles(articles) {
                     (versions.length ? versions.slice(-1)[0].text : "").length + " chars,  new version: " + 
                     article.text.length + " chars")
         if (!versions.length || versions.slice(-1)[0].text != article.text) {
-          console.log("Saving version " + JSON.stringify(article))
+          console.log("Saving version " + article.url)
           await client.query('INSERT INTO version (url, text, title, links, authors, keywords, published) \
                           VALUES ($1, $2, $3, $4, $5, $6, $7)', 
                           [article.url, article.text, article.title, article.links, 
