@@ -41,7 +41,7 @@ export async function scanPage(data) {
                               WHERE new = TRUE AND ended IS NULL AND page = $1', [data.url])
 
     for (const row of res.rows) {
-      console.log("Found new placement " + row.url)
+      console.log("Found new placement " + row.link)
       await trigger('url', {
         url: row.link,
         page: data.url
