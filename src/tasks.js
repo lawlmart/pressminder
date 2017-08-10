@@ -1,6 +1,5 @@
-const AWSXRay = require('aws-xray-sdk');
+const AWSXRay = require('aws-xray-sdk')
 const Client = require('pg').Client
-const Promise = require("bluebird");
 const request = require('request-promise')
 const cheerio = require('cheerio')
 const fs = require('fs')
@@ -9,8 +8,18 @@ const kinesis = require('@heroku/kinesis')
 const uuid = require('uuid/v4');
 const chrono = require('chrono-node')
 const _ = require('lodash')
-
+const Promise = require("bluebird")
+const redis = Promise.promisifyAll(require("redis"));
+ 
 import { trigger } from './events'
+
+async function log(name, message) {
+  console.log(name + " - " + message)
+  const redisClient = redis.createClient({
+    host: process.env.REDIS_HOST || 'localhost'
+  })
+  return await redisClient.lpushAsync("pressminder:log:" + name, Date.now().toLocaleString() + ": " + message)
+}
 
 function startSegment(name, args) {
   return new Promise((resolve, reject) => {
@@ -36,7 +45,6 @@ function endSegment(segment) {
 }
 
 export async function scanPage(data) {
-
   const segment = await startSegment('scan', {url: data.url})
   const htmlString = await request(data.url)
   const $ = cheerio.load(htmlString)
@@ -70,13 +78,12 @@ export async function scanPage(data) {
 
     for (const row of res.rows) {
       let link = row.link
-      console.log("Found new placement " + link)
+      log(link, "Found on " + data.url)
       await trigger('url', {
         url: link,
         page: data.url
       })
     }
-    console.log("Found " + res.rows.length + " new links")
   } catch (err) {
     endSegment(segment)
     console.error(err)
@@ -94,7 +101,7 @@ export async function retrieveArticle(input) {
   
   const segment = await startSegment('url', {url: input.url})
   try {
-    console.log("Requesting " + JSON.stringify(input))
+    log(input.url, "Requesting desktop site")
     const lazy = unfluff.lazy(await request({
       uri: input.url,
       headers: {
@@ -122,15 +129,27 @@ export async function retrieveArticle(input) {
       _placementPage: input.page
     }
 
-    if (!output.title || !output.published || !authors.length) {
-      console.log("Invalid article found: " + JSON.stringify(output))
+    log(input.url, "Parsed desktop site: " + JSON.stringify(output))
+
+    if (!output.title) {
+      log(input.url, "Invalid, no title found.")
+      return
+    } else if (!output.published) {
+      log(input.url, "Invalid, no published date found.")
+      return
+    } else if (!authors.length) {
+      log(input.url, "Invalid, no authors found.")
+      return
+    } else if (!output.url) {
+      log(input.url, "Invalid, no canonical url found.")
       return
     }
+      
+    log(output.url, "Requesting mobile site")
 
-    console.log("Requesting mobile " + output.url)
     try {
       const lazyMobile = unfluff.lazy(await request({
-        uri: input.url,
+        uri: output.url,
         headers: {
           "User-Agent": "mozilla/5.0 (iphone; cpu iphone os 7_0_2 like mac os x) applewebkit/537.51.1 (khtml, like gecko) version/7.0 mobile/11a501 safari/9537.53",
           referer: "https://www.google.com/"
@@ -140,15 +159,15 @@ export async function retrieveArticle(input) {
       output.image = lazyMobile.image()
       output.tags = lazyMobile.tags()
 
-      console.log("Retrieved article " + output.title + " by " + output.authors.join(", ") + "  (" + output.text.length + ") chars")
+      log(output.url, "Parsed mobile site: " + JSON.stringify(output))
     } catch (err) {
-      console.log("Failed to retrieve full text of article " + output.url)
+      log(output.url, "Failed to retrieve mobile site: " + err)
     }
     
     await trigger('article', output)
     endSegment(segment)
   } catch (err) {
-    console.log("Failed to retrieve article " + input.url + ": " + err)
+    log(input.url, "Failed to retrieve article: " + err)
     console.error(err)
     endSegment(segment)
   }
@@ -176,7 +195,7 @@ export async function checkArticles() {
       (last_checked < now() - interval '1 week')")
 
     for (const row of res.rows) {
-      console.log("Requesting update of " + row.url)
+      log(row.url, "Stale, requesting update")
       await trigger('url', {
         url: row.url
       })
@@ -202,31 +221,30 @@ export async function processArticles(articles) {
                 VALUES ($1, now(), now()) \
                 ON CONFLICT (url) DO UPDATE SET last_checked=now()', 
                 [article.url])
-      
-      console.log("Saved " + JSON.stringify(article.url))
+
+      log(article.url, "Updated articles db")
 
       if (article._placementPage && article._placementUrl) {
         const updateResult = await client.query('UPDATE placement SET url = $1 \
                             WHERE link = $2 AND page = $3', 
                             [article.url, article._placementUrl, article._placementPage])
         if (updateResult.rowCount) {
-          console.log("Saved placement url " + article.url)
+          log(article.url, "Saved as canonical link of " + article._placementUrl)
+          log(article._placementUrl, "Set canonical link to " + article.url)
         } else {
-          console.log("Failed to update placement link " + article._placementUrl + " on " + article._placementPage)
+          log(article.url, "Failed to save as canonical link of " + article._placementUrl + " on " + article._placementPage)
+          log(article._placementUrl, "Failed to set canonical link to " + article.url + " (" + article._placementPage + ")")
         }
       }
 
       if (article.text) {
         const versions = await getVersions(article.url, client)
-        console.log("Version comparison - num versions: " + versions.length.toString() + " last version: " + 
-                    (versions.length ? versions.slice(-1)[0].text : "").length + " chars,  new version: " + 
-                    article.text.length + " chars")
         if (!versions.length || versions.slice(-1)[0].text != article.text) {
-          console.log("Saving version " + article.url)
           await client.query('INSERT INTO version (url, text, title, links, authors, keywords, published) \
                           VALUES ($1, $2, $3, $4, $5, $6, $7)', 
                           [article.url, article.text, article.title, article.links, 
                             article.authors, article.keywords, article.published])
+          log(article.url, "Saved new version")
         }
       }
       endSegment(segment)

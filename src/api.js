@@ -2,6 +2,8 @@ import ApiBuilder from 'claudia-api-builder'
 import  AWSXRay from 'aws-xray-sdk'
 import moment from 'moment'
 import { getVersions } from './tasks'
+const Promise = require("bluebird")
+const redis = Promise.promisifyAll(require("redis"));
 const Client = require('pg').Client
 const api = new ApiBuilder('AWS_PROXY');
 
@@ -75,6 +77,16 @@ api.get('/', async (request) => {
     "<span>" + (a.since ? moment(a.since).fromNow() : '') + "</span>" +
     a.versions.map((v, idx) => "<a href='/article/" + encodeURIComponent(a.url) + "/version/" + idx.toString() + "'>" + moment(v.timestamp).fromNow() + "</a>").join("") +
     "</div>").join(""))
+}, { success: { contentType: 'text/html'}});
+
+api.get('/logs', async (request) => {
+  const name = request.queryString.name
+  const redisClient = redis.createClient({
+    host: process.env.REDIS_HOST || 'localhost'
+  })
+  const logs = await redisClient.lrangeAsync("pressminder:log:" + name, 0, -1)
+
+  return renderPage(logs.map(log => log.join("<br/>")))
 }, { success: { contentType: 'text/html'}});
 
 api.get('/article/{id}', async (request) => {
