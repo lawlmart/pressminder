@@ -11,6 +11,7 @@ const _ = require('lodash')
 const Promise = require("bluebird")
 const redis = Promise.promisifyAll(require("redis"));
  
+import moment from 'moment'
 import { trigger } from './events'
 
 async function log(name, message) {
@@ -18,7 +19,7 @@ async function log(name, message) {
   const redisClient = redis.createClient({
     host: process.env.REDIS_HOST || 'localhost'
   })
-  await redisClient.lpushAsync("pressminder:log:" + name, Date.now().toLocaleString() + ": " + message)
+  await redisClient.lpushAsync("pressminder:log:" + name, moment().format('lll') + ": " + message)
   await redisClient.quitAsync()
 }
 
