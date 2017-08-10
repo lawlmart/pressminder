@@ -18,7 +18,8 @@ async function log(name, message) {
   const redisClient = redis.createClient({
     host: process.env.REDIS_HOST || 'localhost'
   })
-  return await redisClient.lpushAsync("pressminder:log:" + name, Date.now().toLocaleString() + ": " + message)
+  await redisClient.lpushAsync("pressminder:log:" + name, Date.now().toLocaleString() + ": " + message)
+  await redisClient.quitAsync()
 }
 
 function startSegment(name, args) {
