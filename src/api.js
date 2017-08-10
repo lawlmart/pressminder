@@ -2,11 +2,7 @@ import ApiBuilder from 'claudia-api-builder'
 import  AWSXRay from 'aws-xray-sdk'
 import moment from 'moment'
 import { getVersions } from './tasks'
-if (process.env.NODE_ENV == 'production') {
-  Client = AWSXRay.capturePostgres(require('pg')).Client
-} else {
-  Client = require('pg').Client
-}
+const Client = require('pg').Client
 const api = new ApiBuilder('AWS_PROXY');
 
 const renderPage = function (body) {

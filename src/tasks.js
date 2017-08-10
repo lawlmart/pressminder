@@ -1,11 +1,5 @@
 const AWSXRay = require('aws-xray-sdk');
-let Client
-if (process.env.NODE_ENV == 'production') {
-  AWSXRay.captureHTTPsGlobal(require('http'));
-  Client = AWSXRay.capturePostgres(require('pg')).Client
-} else {
-  Client = require('pg').Client
-}
+const Client = require('pg').Client
 const Promise = require("bluebird");
 const request = require('request-promise')
 const cheerio = require('cheerio')
