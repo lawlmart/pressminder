@@ -47,7 +47,7 @@ export async function scanPage(data) {
         page: data.url
       })
     }
-    console.log("Finished scanning " + data.url)
+    console.log("Finished scanning " + data.url + ", found " + res.rows.length + " links")
   } catch (err) {
     console.error(err)
   } finally {
