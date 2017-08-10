@@ -1532,6 +1532,10 @@ invariant@^2.2.0, invariant@^2.2.2:
   dependencies:
     loose-envify "^1.0.0"
 
+iopipe@^0.8.0:
+  version "0.8.0"
+  resolved "https://registry.yarnpkg.com/iopipe/-/iopipe-0.8.0.tgz#82ea924d54e1c04e8f07aee727e72496c58fb9b5"
+
 ip@^1.1.4, ip@^1.1.5:
   version "1.1.5"
   resolved "https://registry.yarnpkg.com/ip/-/ip-1.1.5.tgz#bdded70114290828c0a039e72ef25f5aaec4354a"

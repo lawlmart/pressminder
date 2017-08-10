@@ -11,3 +11,8 @@ trigger('scan', {"url": "http://www.latimes.com",   "linkRegex": "/.*/.*story.*h
 })
 .catch(err => console.log(err))
 
+trigger('scan', {"url": "https://www.washingtonpost.com",   "linkRegex": ".*washingtonpost.com/.*/20[0-9][0-9]/.*" })
+.then(() => {
+  console.log("Finished scanning")
+})
+.catch(err => console.log(err))
