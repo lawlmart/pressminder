@@ -51,7 +51,7 @@ export async function scanPage(data) {
   } catch (err) {
     console.error(err)
   } finally {
-    await client.end
+    await client.end()
   }
 }
 
@@ -155,7 +155,7 @@ export async function checkArticles() {
   catch (err) {
     console.error(err)
   } finally {
-    await client.end
+    await client.end()
   }
 }
 
@@ -196,6 +196,6 @@ export async function processArticles(articles) {
   catch (err) {
     console.error(err)
   } finally {
-    await client.end
+    await client.end()
   }
 }

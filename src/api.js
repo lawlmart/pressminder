@@ -63,7 +63,7 @@ const getArticles = async function(count, offset) {
   catch (err) {
     console.error(err)
   } finally {
-    await client.end
+    await client.end()
   }
   return articles
 }
@@ -88,7 +88,7 @@ api.get('/article/{id}', async (request) => {
   catch (err) {
     console.error(err)
   } finally {
-    await client.end
+    await client.end()
   }
   const articles = []  
   return renderPage("<pre style='white-space: pre-wrap;'>" + versions.slice(-1)[0].text + "</pre>")
@@ -105,7 +105,7 @@ api.get('/article/{id}/version/{version}', async (request) => {
   catch (err) {
     console.error(err)
   } finally {
-    await client.end
+    await client.end()
   }
   return renderPage("<pre style='white-space: pre-wrap;'>" + versions[request.pathParams.version].text + "</pre>")
 }, { success: { contentType: 'text/html'}});
