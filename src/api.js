@@ -67,14 +67,14 @@ api.get('/', async (request) => {
   return renderPage(articles.map(a => "<div><a href='" + a.url + "'>" +
     (a.versions.length ? a.versions.slice(-1)[0].title : 'loading ...') + "</a> " + 
     "<span>" + (a.since ? moment(a.since).fromNow() : '') + "</span>" +
-    a.versions.map((v, idx) => "<a href='/article/" + a.id + "/version/" + idx.toString() + "'>" + moment(v.timestamp).fromNow() + "</a>").join("") +
+    a.versions.map((v, idx) => "<a href='/article/" + encodeURIComponent(a.url) + "/version/" + idx.toString() + "'>" + moment(v.timestamp).fromNow() + "</a>").join("") +
     "</div>").join(""))
 }, { success: { contentType: 'text/html'}});
 
 api.get('/article/{id}', async (request) => {
   const client = new Client()
   await client.connect()
-  const versions = await getVersions(request.pathParams.id, client)
+  const versions = await getVersions(decodeURIComponent(request.pathParams.id), client)
   await client.end()
   return renderPage("<pre style='white-space: pre-wrap;'>" + versions.slice(-1)[0].text + "</pre>")
 }, { success: { contentType: 'text/html'}});
@@ -82,7 +82,7 @@ api.get('/article/{id}', async (request) => {
 api.get('/article/{id}/version/{version}', async (request) => {
   const client = new Client()
   await client.connect()
-  const versions = await getVersions(request.pathParams.id, client)
+  const versions = await getVersions(decodeURIComponent(request.pathParams.id), client)
   await client.end()
   return renderPage("<pre style='white-space: pre-wrap;'>" + versions[request.pathParams.version].text + "</pre>")
 }, { success: { contentType: 'text/html'}});
