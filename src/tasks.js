@@ -26,29 +26,33 @@ export async function scanPage(data) {
 
   const client = new Client()
   await client.connect()
+  try {
+    await client.query('UPDATE placement SET ended = now(), new = FALSE \
+                        WHERE ended IS NULL \
+                        AND page = $1', [data.url])
 
-  await client.query('UPDATE placement SET ended = now(), new = FALSE \
-                      WHERE ended IS NULL \
-                      AND page = $1', [data.url])
+    for (const url of urls) {
+      await client.query('INSERT INTO placement (page, link, started, new) \
+                          VALUES ($1, $2, now(), TRUE) \
+                          ON CONFLICT (page, link) DO UPDATE SET ended = NULL', [data.url, url])
+    }
 
-  for (const url of urls) {
-    await client.query('INSERT INTO placement (page, link, started, new) \
-                        VALUES ($1, $2, now(), TRUE) \
-                        ON CONFLICT (page, link) DO UPDATE SET ended = NULL', [data.url, url])
+    const res = await client.query('SELECT placement.link FROM placement \
+                              WHERE new = TRUE AND ended IS NULL AND placement.page = $1', [data.url])
+
+    for (const row of res.rows) {
+      console.log("Found new placement " + row.url)
+      await trigger('url', {
+        url: row.link,
+        page: data.url
+      })
+    }
+    console.log("Finished scanning " + data.url)
+  } catch (err) {
+    console.error(err)
+  } finally {
+    await client.end
   }
-
-  const res = await client.query('SELECT placement.link FROM placement \
-                            WHERE new = TRUE AND ended IS NULL AND placement.page = $1', [data.url])
-
-  for (const row of res.rows) {
-    console.log("Found new placement " + row.url)
-    await trigger('url', {
-      url: row.link,
-      page: data.url
-    })
-  }
-  console.log("Finished scanning " + data.url)
-  await client.end
 }
 
 export async function retrieveArticle(input) {
@@ -130,52 +134,64 @@ export async function getVersions(url, client) {
 export async function checkArticles() {
   const client = new Client()
   await client.connect()
-  const res = await client.query("SELECT url FROM article \
-    WHERE (last_checked < now() - interval '5 minute' AND first_checked > now() - interval '1 hour') OR \
-    (last_checked < now() - interval '1 hour' AND first_checked > now() - interval '1 day') OR \
-    (last_checked < now() - interval '1 day' AND first_checked > now() - interval '1 week') OR \
-    (last_checked < now() - interval '1 week')")
-  await client.end()
-  for (const row of res.rows) {
-    console.log("Requesting update of " + row.url)
-    await trigger('url', {
-      url: row.url
-    })
+  try {
+    const res = await client.query("SELECT url FROM article \
+      WHERE (last_checked < now() - interval '5 minute' AND first_checked > now() - interval '1 hour') OR \
+      (last_checked < now() - interval '1 hour' AND first_checked > now() - interval '1 day') OR \
+      (last_checked < now() - interval '1 day' AND first_checked > now() - interval '1 week') OR \
+      (last_checked < now() - interval '1 week')")
+
+    for (const row of res.rows) {
+      console.log("Requesting update of " + row.url)
+      await trigger('url', {
+        url: row.url
+      })
+    }
+  }
+  catch (err) {
+    console.error(err)
+  } finally {
+    await client.end
   }
 }
 
 export async function processArticles(articles) {
   const client = new Client()
   await client.connect()
+  try {
+    for (let article of articles) {
+      const res = await client.query('INSERT INTO article (url, last_checked, first_checked) \
+                VALUES ($1, now(), now()) \
+                ON CONFLICT (url) DO UPDATE SET last_checked=now()', 
+                [article.url])
+      
+      console.log("Article " + article.url + " saved")
 
-  for (let article of articles) {
-    const res = await client.query('INSERT INTO article (url, last_checked, first_checked) \
-              VALUES ($1, now(), now()) \
-              ON CONFLICT (url) DO UPDATE SET last_checked=now()', 
-              [article.url])
-    
-    console.log("Article " + article.url + " saved")
+      if (article._placementPage && article._placementUrl) {
+        await client.query('UPDATE placement SET url = $1 \
+                            WHERE link = $2 AND page = $3', 
+                            [article.url, article._placementUrl, article._placementPage])
+        console.log("Placement url " + article.url + " updated")
+      }
 
-    if (article._placementPage && article._placementUrl) {
-      await client.query('UPDATE placement SET url = $1 \
-                          WHERE link = $2 AND page = $3', 
-                          [article.url, article._placementUrl, article._placementPage])
-      console.log("Placement url " + article.url + " updated")
-    }
-
-    if (article.text) {
-      const versions = await getVersions(article.url, client)
-      console.log("Version comparison - num versions: " + versions.length.toString() + " last version: " + 
-                  (versions.length ? versions.slice(-1)[0].text : "").length + " chars,  new version: " + 
-                  article.text.length + " chars")
-      if (!versions.length || versions.slice(-1)[0].text != article.text) {
-        console.log("Saving version " + JSON.stringify(article))
-        await client.query('INSERT INTO version (url, text, title, links, authors, keywords, published) \
-                        VALUES ($1, $2, $3, $4, $5, $6, $7)', 
-                        [article.url, article.text, article.title, article.links, 
-                          article.authors, article.keywords, article.published])
+      if (article.text) {
+        const versions = await getVersions(article.url, client)
+        console.log("Version comparison - num versions: " + versions.length.toString() + " last version: " + 
+                    (versions.length ? versions.slice(-1)[0].text : "").length + " chars,  new version: " + 
+                    article.text.length + " chars")
+        if (!versions.length || versions.slice(-1)[0].text != article.text) {
+          console.log("Saving version " + JSON.stringify(article))
+          await client.query('INSERT INTO version (url, text, title, links, authors, keywords, published) \
+                          VALUES ($1, $2, $3, $4, $5, $6, $7)', 
+                          [article.url, article.text, article.title, article.links, 
+                            article.authors, article.keywords, article.published])
+        }
       }
     }
   }
-  await client.end()
+  catch (err) {
+    console.error(err)
+  } finally {
+    await client.end
+  }
 }
