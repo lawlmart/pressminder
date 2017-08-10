@@ -117,7 +117,6 @@ export async function retrieveArticle(input) {
       console.log("Failed to retrieve full text of article " + output.url)
     }
     
-    console.log(output)
     await trigger('article', output)
   } catch (err) {
     console.log("Failed to retrieve article " + input.url + ": " + err)
