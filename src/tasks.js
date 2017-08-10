@@ -165,7 +165,7 @@ export async function processArticles(articles) {
     if (article.text) {
       const versions = await getVersions(article.url, client)
       console.log("Version comparison - num versions: " + versions.length.toString() + " last version: " + 
-                  versions.slice(-1)[0].text + " new text: " + article.text)
+                  (versions.length ? versions.slice(-1)[0].text : "none") + " new text: " + article.text)
       if (!versions.length || versions.slice(-1)[0].text != article.text) {
         await client.query('INSERT INTO version (url, text, title, links, authors, keywords, published) \
                         VALUES ($1, $2, $3, $4, $5, $6, $7)', 
