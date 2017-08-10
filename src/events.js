@@ -12,7 +12,7 @@ const sendToStream = (stream, type, payload) => {
     const params = {
       Records: [{
         Data: base64data,
-        PartitionKey: Math.random().toString()
+        PartitionKey: type
       }],
       StreamName: stream
     };
