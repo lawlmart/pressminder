@@ -111,8 +111,6 @@ export async function retrieveArticle(input) {
     
     console.log(output)
     await trigger('article', output)
-
-    return output
   } catch (err) {
     console.log("Failed to retrieve article " + input.url + ": " + err)
     console.error(err)
@@ -170,7 +168,8 @@ export async function processArticles(articles) {
     if (article.text) {
       const versions = await getVersions(article.url, client)
       console.log("Version comparison - num versions: " + versions.length.toString() + " last version: " + 
-                  (versions.length ? versions.slice(-1)[0].text : "none") + " new text: " + article.text)
+                  (versions.length ? versions.slice(-1)[0].text : "").length + " chars,  new version: " + 
+                  article.text.length + " chars")
       if (!versions.length || versions.slice(-1)[0].text != article.text) {
         console.log("Saving version " + JSON.stringify(article))
         await client.query('INSERT INTO version (url, text, title, links, authors, keywords, published) \
