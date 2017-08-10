@@ -24,6 +24,8 @@ function startSegment(name, args) {
       resolve()
       return
     }
+
+    args = args || {}
     AWSXRay.captureAsyncFunc(name, function(subsegment) {
       for (let key of Object.keys(args)) {
         subsegment.addAnnotation(key, args[key]);
@@ -96,7 +98,7 @@ export async function retrieveArticle(input) {
     return
   }
   
-  const segment = await startSegment('url', {url: data.url})
+  const segment = await startSegment('url', {url: input.url})
   try {
     console.log("Requesting " + JSON.stringify(input))
     const lazy = unfluff.lazy(await request({
@@ -177,7 +179,7 @@ export async function checkArticles() {
   const client = new Client()
   await client.connect()
 
-  const segment = await startSegment('check', {url: data.url})
+  const segment = await startSegment('check')
   try {
     const res = await client.query("SELECT url FROM article \
       WHERE (last_checked < now() - interval '1 hour' AND first_checked > now() - interval '1 day') OR \
@@ -204,9 +206,9 @@ export async function processArticles(articles) {
   const client = new Client()
   await client.connect()
 
-  const segment = await startSegment('article', {url: data.url})
   try {
     for (let article of articles) {
+      const segment = await startSegment('article', {url: article.url})
       const res = await client.query('INSERT INTO article (url, last_checked, first_checked) \
                 VALUES ($1, now(), now()) \
                 ON CONFLICT (url) DO UPDATE SET last_checked=now()', 
@@ -234,13 +236,12 @@ export async function processArticles(articles) {
                             article.authors, article.keywords, article.published])
         }
       }
+      endSegment(segment)
     }
   }
   catch (err) {
-    endSegment(segment)
     console.error(err)
   } finally {
-    endSegment(segment)
     await client.end()
   }
 }
