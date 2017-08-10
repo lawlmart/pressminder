@@ -86,19 +86,24 @@ export async function retrieveArticle(input) {
       _placementPage: input.page
     }
 
-    console.log("Requesting mobile " + input.url)
-    const lazyMobile = unfluff.lazy(await request({
-      uri: input.url,
-      headers: {
-        "User-Agent": "mozilla/5.0 (iphone; cpu iphone os 7_0_2 like mac os x) applewebkit/537.51.1 (khtml, like gecko) version/7.0 mobile/11a501 safari/9537.53",
-        referer: "https://www.google.com/"
-      }
-    }))
-    output.text = lazyMobile.text()
-    output.image = lazyMobile.image()
-    output.tags = lazyMobile.tags()
+    console.log("Requesting mobile " + output.url)
+    try {
+      const lazyMobile = unfluff.lazy(await request({
+        uri: input.url,
+        headers: {
+          "User-Agent": "mozilla/5.0 (iphone; cpu iphone os 7_0_2 like mac os x) applewebkit/537.51.1 (khtml, like gecko) version/7.0 mobile/11a501 safari/9537.53",
+          referer: "https://www.google.com/"
+        }
+      }))
+      output.text = lazyMobile.text()
+      output.image = lazyMobile.image()
+      output.tags = lazyMobile.tags()
+
+      console.log("Retrieved article " + output.title + " by " + output.authors.join(", ") + "  (" + output.text.length + ") chars")
+    } catch (err) {
+      console.log("Failed to retrieve full text of article " + output.url)
+    }
     
-    console.log("Retrieved article " + output.title + " by " + output.authors.join(", ") + "  (" + output.text.length + ") chars")
     console.log(output)
     await trigger('article', output)
 
