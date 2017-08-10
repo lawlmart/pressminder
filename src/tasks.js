@@ -111,14 +111,9 @@ export async function retrieveArticle(input) {
                     .filter(x => x.indexOf('.www') === -1)
                     .value()
 
-    let keywords = lazy.keywords()
-    if (keywords) {
-      keywords = keywords.split(',')
-    }
-
     const output = {
       authors,
-      keywords,
+      keywords: (lazy.keywords() || "").split(','),
       title: lazy.title(),
       url: lazy.canonicalLink(),
       published: chrono.parseDate(lazy.date()),
