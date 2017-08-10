@@ -86,6 +86,11 @@ export async function retrieveArticle(input) {
       _placementPage: input.page
     }
 
+    if (!output.title || !output.published) {
+      console.log("Invalid article found: " + JSON.stringify(output))
+      return
+    }
+
     console.log("Requesting mobile " + output.url)
     try {
       const lazyMobile = unfluff.lazy(await request({
