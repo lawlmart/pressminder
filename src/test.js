@@ -5,22 +5,9 @@ process.on('unhandledRejection', r => console.log(r));
 
 trigger('check')
 
-trigger('scan', {
-    "url": "https://nytimes.com",
-    "linkRegex": ".*nytimes.com/20[0-9][0-9]/.*"
-})
+trigger('scan', {"url": "http://www.latimes.com",   "linkRegex": "/.*/.*story.*html.*" })
 .then(() => {
-  console.log("Finished scanning nytimes")
+  console.log("Finished scanning")
 })
 .catch(err => console.log(err))
-
-trigger('scan', {
-  "url": "https://washingtonpost.com",
-  "linkRegex": ".*washingtonpost.com/.*/20[0-9][0-9]/.*"
-})
-.then(() => {
-console.log("Finished scanning wpo")
-})
-.catch(err => console.log(err))
-
 

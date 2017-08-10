@@ -23,6 +23,7 @@ export async function scanPage(data) {
       urls.push(url)
     }
   })
+  console.log("Finished scanning " + data.url + ", found " + urls.length + " links")
 
   const client = new Client()
   await client.connect()
@@ -41,13 +42,17 @@ export async function scanPage(data) {
                               WHERE new = TRUE AND ended IS NULL AND page = $1', [data.url])
 
     for (const row of res.rows) {
-      console.log("Found new placement " + row.link)
+      let link = row.link
+      if (link.indexOf('http') === -1) {
+        link = data.url + link 
+      }
+      console.log("Found new placement " + link)
       await trigger('url', {
-        url: row.link,
+        url: link,
         page: data.url
       })
     }
-    console.log("Finished scanning " + data.url + ", found " + res.rows.length + " links")
+    console.log("Found " + res.rows.length + " new links")
   } catch (err) {
     console.error(err)
   } finally {
