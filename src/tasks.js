@@ -140,8 +140,7 @@ export async function checkArticles() {
   await client.connect()
   try {
     const res = await client.query("SELECT url FROM article \
-      WHERE (last_checked < now() - interval '5 minute' AND first_checked > now() - interval '1 hour') OR \
-      (last_checked < now() - interval '1 hour' AND first_checked > now() - interval '1 day') OR \
+      WHERE (last_checked < now() - interval '1 hour' AND first_checked > now() - interval '1 day') OR \
       (last_checked < now() - interval '1 day' AND first_checked > now() - interval '1 week') OR \
       (last_checked < now() - interval '1 week')")
 
@@ -169,7 +168,7 @@ export async function processArticles(articles) {
                 ON CONFLICT (url) DO UPDATE SET last_checked=now()', 
                 [article.url])
       
-      console.log("Article " + article.url + " saved")
+      console.log("Saved " + article.url)
 
       if (article._placementPage && article._placementUrl) {
         await client.query('UPDATE placement SET url = $1 \
