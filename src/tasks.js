@@ -4,7 +4,13 @@ const cheerio = require('cheerio')
 const fs = require('fs')
 const unfluff = require('unfluff')
 const S3 = require('aws-sdk/clients/s3');
-const { Client } = require('pg')
+const AWSXRay = require('aws-xray-sdk');
+let Client
+if (process.env.NODE_ENV == 'production') {
+  Client = AWSXRay.capturePostgres(require('pg')).Client
+} else {
+  Client = require('pg').Client
+}
 const kinesis = require('@heroku/kinesis')
 const uuid = require('uuid/v4');
 const chrono = require('chrono-node')
@@ -12,8 +18,30 @@ const _ = require('lodash')
 
 import { trigger } from './events'
 
+function startSegment(name, args) {
+  return new Promise((resolve, reject) => {
+    if (process.env.NODE_ENV !== 'production') {
+      resolve()
+      return
+    }
+    AWSXRay.captureAsyncFunc('send', function(subsegment) {
+      for (let key of Object.keys(args)) {
+        subsegment.addAnnotation(key, args[key]);
+      }
+      resolve(subsegment)
+    });
+  })
+}
+
+function endSegment(segment) {
+  if (segment) {
+    segment.close()
+  }
+}
+
 export async function scanPage(data) {
 
+  const segment = await startSegment('scan', {url: data.url})
   const htmlString = await request(data.url)
   const $ = cheerio.load(htmlString)
   let urls = []
@@ -56,6 +84,7 @@ export async function scanPage(data) {
   } catch (err) {
     console.error(err)
   } finally {
+    endSegment(segment)
     await client.end()
   }
 }
@@ -65,6 +94,7 @@ export async function retrieveArticle(input) {
     console.log("No url provided to retrieve article!")
     return
   }
+  
   try {
     console.log("Requesting " + JSON.stringify(input))
     const lazy = unfluff.lazy(await request({
