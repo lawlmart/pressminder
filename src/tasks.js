@@ -167,12 +167,11 @@ export async function processArticles(articles) {
       console.log("Version comparison - num versions: " + versions.length.toString() + " last version: " + 
                   (versions.length ? versions.slice(-1)[0].text : "none") + " new text: " + article.text)
       if (!versions.length || versions.slice(-1)[0].text != article.text) {
+        console.log("Saving version " + JSON.stringify(article))
         await client.query('INSERT INTO version (url, text, title, links, authors, keywords, published) \
                         VALUES ($1, $2, $3, $4, $5, $6, $7)', 
                         [article.url, article.text, article.title, article.links, 
                           article.authors, article.keywords, article.published])
-
-        console.log("Version " + article.url + " added")
       }
     }
   }
