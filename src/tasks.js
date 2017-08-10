@@ -53,7 +53,7 @@ export async function scanPage(data) {
 
 export async function retrieveArticle(input) {
   try {
-    console.log("Requesting " + input.url)
+    console.log("Requesting " + JSON.stringify(input))
     const lazy = unfluff.lazy(await request({
       uri: input.url,
       headers: {
