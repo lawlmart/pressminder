@@ -135,15 +135,13 @@ export async function checkArticles() {
     (last_checked < now() - interval '1 hour' AND first_checked > now() - interval '1 day') OR \
     (last_checked < now() - interval '1 day' AND first_checked > now() - interval '1 week') OR \
     (last_checked < now() - interval '1 week')")
-
+  await client.end()
   for (const row of res.rows) {
     console.log("Requesting update of " + row.url)
     await trigger('url', {
       url: row.url
     })
   }
-
-  client.end()
 }
 
 export async function processArticles(articles) {
