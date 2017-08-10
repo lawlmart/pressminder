@@ -37,8 +37,8 @@ export async function scanPage(data) {
                           ON CONFLICT (page, link) DO UPDATE SET ended = NULL', [data.url, url])
     }
 
-    const res = await client.query('SELECT placement.link FROM placement \
-                              WHERE new = TRUE AND ended IS NULL AND placement.page = $1', [data.url])
+    const res = await client.query('SELECT link FROM placement \
+                              WHERE new = TRUE AND ended IS NULL AND page = $1', [data.url])
 
     for (const row of res.rows) {
       console.log("Found new placement " + row.url)
