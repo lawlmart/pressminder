@@ -167,7 +167,7 @@ export async function processArticles(articles) {
                 ON CONFLICT (url) DO UPDATE SET last_checked=now()', 
                 [article.url])
       
-      console.log("Saved " + article.url)
+      console.log("Saved " + JSON.stringify(article.url))
 
       if (article._placementPage && article._placementUrl) {
         await client.query('UPDATE placement SET url = $1 \

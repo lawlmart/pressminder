@@ -16,7 +16,7 @@ exports.handler = async function(event, context) {
     console.log("Handler finished")
     context.succeed();
   } catch (err) {
-    console.log(err)
+    console.log("Handler error: " + err)
     context.fail(err)
   }
 }
