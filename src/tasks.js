@@ -56,6 +56,10 @@ export async function scanPage(data) {
 }
 
 export async function retrieveArticle(input) {
+  if (!input.url) {
+    console.log("No url provided to retrieve article!")
+    return
+  }
   try {
     console.log("Requesting " + JSON.stringify(input))
     const lazy = unfluff.lazy(await request({
