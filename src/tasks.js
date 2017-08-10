@@ -136,7 +136,7 @@ export async function checkArticles() {
     (last_checked < now() - interval '1 day' AND first_checked > now() - interval '1 week') OR \
     (last_checked < now() - interval '1 week')")
 
-  for (const row in res.rows) {
+  for (const row of res.rows) {
     console.log("Requesting update of " + row.url)
     await trigger('url', {
       url: row.url
