@@ -86,7 +86,7 @@ api.get('/logs', async (request) => {
   })
   const logs = await redisClient.lrangeAsync("pressminder:log:" + name, 0, -1)
   await redisClient.quitAsync()
-  return renderPage("<h1>" + name + "</h1>" + logs.map(log => log.join("<br/>")))
+  return renderPage("<h1>" + name + "</h1>" + logs.join("<br/>"))
 }, { success: { contentType: 'text/html'}});
 
 api.get('/article/{id}', async (request) => {
