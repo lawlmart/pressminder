@@ -189,12 +189,10 @@ async function checkSocial(url, client) {
   })
   const $ = cheerio.load(htmlString)
   const tweetTimestamps = $('.tweet-timestamp .js-short-timestamp').map((i, el) => parseInt($(el).attr('data-time'))).get()
-  let minutes = 100000
-  if (tweetTimestamps.length) {
-    minutes = Math.round(((Date.now() / 1000) - tweetTimestamps[tweetTimestamps.length - 1]) / 60)
-  }
-  log(url, "Earliest tweet " + minutes.toString() + " minutes ago")
-  await client.query("INSERT INTO social (url, timestamp, twitter) VALUES ($1, now(), $2)", [url, minutes])
+  const earliest = new Date(tweetTimestamps[tweetTimestamps.length - 1] * 1000)
+  log(url, "Found " + tweetTimestamps.length + " tweets, earliest " + earliest.toLocaleString())
+  await client.query("INSERT INTO social (url, timestamp, tweets, earliest_tweet) VALUES ($1, now(), $2, $3)",
+                      [url, tweetTimestamps.length, earliest])
 }
 
 export async function checkArticles() {
