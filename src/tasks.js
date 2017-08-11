@@ -58,6 +58,7 @@ export async function scanPage(data) {
       if (url.indexOf('http') === -1) {
         url = data.url + url 
       }
+      url = url.split('#')[0]
       urls.push(url)
     }
   })
