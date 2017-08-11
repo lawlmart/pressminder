@@ -222,7 +222,7 @@ export async function checkArticles() {
     res = await client.query("SELECT article.url, social.url as s FROM article \
                               LEFT JOIN social \
                               ON social.url = article.url AND social.timestamp > now() - interval '1 day' \
-                              WHERE social.url IS NULL")
+                              WHERE social.url IS NULL AND article.first_checked > now() - interval '7 day'")
     
 
     const throttle = createThrottle(1)
