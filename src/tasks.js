@@ -10,6 +10,7 @@ const chrono = require('chrono-node')
 const _ = require('lodash')
 const Promise = require("bluebird")
 const redis = Promise.promisifyAll(require("redis"));
+const createThrottle = require('async-throttle')
  
 import moment from 'moment'
 import { trigger } from './events'
@@ -179,22 +180,55 @@ export async function getVersions(url, client) {
   }})
 }
 
+async function checkSocial(url, client) {
+  const htmlString = await request({
+    uri: "https://twitter.com/search?f=tweets&q=" + encodeURIComponent(url) + "&src=typd",
+    headers: {
+      "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.90 Safari/537.36"
+    }
+  })
+  const $ = cheerio.load(htmlString)
+  const tweetTimestamps = $('.tweet-timestamp .js-short-timestamp').map((i, el) => parseInt($(el).attr('data-time'))).get()
+  let minutes = 100000
+  if (tweetTimestamps.length) {
+    minutes = Math.round(((Date.now() / 1000) - tweetTimestamps[tweetTimestamps.length - 1]) / 60)
+  }
+  log(url, "Earliest tweet " + minutes.toString() + " minutes ago")
+  await client.query("INSERT INTO social (url, timestamp, twitter) VALUES ($1, now(), $2)", [url, minutes])
+}
+
 export async function checkArticles() {
+  
   const client = new Client()
   await client.connect()
 
   const segment = await startSegment('check')
   try {
-    const res = await client.query("SELECT url FROM article \
-      WHERE (last_checked < now() - interval '1 hour' AND first_checked > now() - interval '1 day') OR \
-      (last_checked < now() - interval '1 day' AND first_checked > now() - interval '1 week') OR \
-      (last_checked < now() - interval '1 week')")
+
+    let res = await client.query("SELECT url FROM article \
+                                  WHERE (last_checked < now() - interval '1 hour' \
+                                  AND first_checked > now() - interval '1 day') OR \
+                                    (last_checked < now() - interval '1 day' \
+                                  AND first_checked > now() - interval '1 week') OR \
+                                    (last_checked < now() - interval '1 week')")
 
     for (const row of res.rows) {
-      log(row.url, "Stale, requesting update")
+      log(row.url, "Stale article, requesting update")
       await trigger('url', {
         url: row.url
       })
+    }
+
+    res = await client.query("SELECT article.url, social.url as s FROM article \
+                              LEFT JOIN social \
+                              ON social.url = article.url AND social.timestamp > now() - interval '1 day' \
+                              WHERE social.url IS NULL")
+    
+
+    const throttle = createThrottle(1)
+    for (const row of res.rows) {
+      log(row.url, "Stale social, requesting update")
+      await checkSocial(row.url, client)
     }
   }
   catch (err) {
