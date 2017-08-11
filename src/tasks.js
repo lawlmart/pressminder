@@ -183,7 +183,7 @@ export async function getVersions(url, client) {
 
 async function checkSocial(url, client) {
   const htmlString = await request({
-    uri: "https://twitter.com/search?f=tweets&q=" + encodeURIComponent(url) + "&src=typd",
+    uri: "https://twitter.com/search?q=" + encodeURIComponent(url) + "&src=typd",
     headers: {
       "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.90 Safari/537.36"
     }
