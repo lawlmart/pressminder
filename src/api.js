@@ -31,7 +31,7 @@ const getArticles = async function(count, offset) {
     const res = await client.query("SELECT version.url, version.title, p.started, \
                                             version.text, version.timestamp, version.authors, MAX(tweets) as tweets \
                                     FROM article, version, social, \
-                                    (SELECT placement.url, MAX(placement.started) as started FROM placement WHERE placement.ended IS NULL GROUP BY placement.url) p, \
+                                    (SELECT placement.url, MAX(placement.started) as started FROM placement WHERE placement.ended IS NULL GROUP BY placement.url) p \
                                     WHERE p.url = article.url AND version.url = p.url AND p.url IS NOT NULL \
                                     GROUP BY version.url, version.title, p.started, \
                                               version.text, version.timestamp, version.authors \
