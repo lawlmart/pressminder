@@ -11,6 +11,7 @@ const _ = require('lodash')
 const Promise = require("bluebird")
 const redis = Promise.promisifyAll(require("redis"));
 const createThrottle = require('async-throttle')
+const S3 = require('aws-sdk/clients/s3');
  
 import moment from 'moment'
 import { trigger } from './events'
@@ -47,34 +48,33 @@ function endSegment(segment) {
   }
 }
 
-export async function scanPage(data) {
-  const segment = await startSegment('scan', {url: data.url})
-  const htmlString = await request(data.url)
-  const $ = cheerio.load(htmlString)
-  let urls = []
-  $('a').each((i, elem) => {
-    let url = $(elem).attr('href');
-    if (url && url.match(new RegExp(data.linkRegex, 'i'))) {
-      if (url.indexOf('http') === -1) {
-        url = data.url + url 
-      }
-      url = url.split('#')[0]
-      urls.push(url)
-    }
-  })
-  console.log("Finished scanning " + data.url + ", found " + urls.length + " links")
+export async function finishedScan(data) {
+  const segment = await startSegment('placements', {url: data.url})
 
   const client = new Client()
   await client.connect()
   try {
+
+    if (data.screenshot) {
+      const s3 = new S3()
+      const params = {
+         Bucket: 'pressminder', 
+         Key: Math.round((new Date()).getTime() / 1000).toString() + "-" + data.url,
+         Body: new Buffer(data.screenshot, 'base64') 
+      }
+      await s3.pubObject(params).promise()
+    }
     await client.query('UPDATE placement SET ended = now(), new = FALSE \
                         WHERE ended IS NULL \
                         AND page = $1', [data.url])
 
-    for (const url of urls) {
-      await client.query('INSERT INTO placement (page, link, started, new) \
-                          VALUES ($1, $2, now(), TRUE) \
-                          ON CONFLICT (page, link) DO UPDATE SET ended = NULL', [data.url, url])
+    for (const placement of data.placements) {
+      console.log("inserting data: " + JSON.stringify(placement))
+      await client.query('INSERT INTO placement (page, link, started, new, title, top, "left", height, width, font_size) \
+                          VALUES ($1, $2, now(), TRUE, $3, $4, $5, $6, $7, $8) \
+                          ON CONFLICT (page, link, title) DO UPDATE SET ended = NULL', 
+                          [data.url, placement.url, placement.title, placement.top, placement.left, 
+                            placement.height, placement.width, placement.fontSize])
     }
 
     const res = await client.query('SELECT link FROM placement \

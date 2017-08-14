@@ -75,11 +75,14 @@ export async function executeEvents(name, payloads) {
     f = tasks.processArticles
   } else if (name == 'url') {
     f = makeMulti(tasks.retrieveArticle)
-  } else if (name == 'scan') {
-    f = makeMulti(tasks.scanPage)
+  } else if (name == 'scan_complete') {
+    f = makeMulti(tasks.finishedScan)
   } else if (name == 'check') {
     f = tasks.checkArticles
-  } 
+  } else {
+    console.log("Unrecognized event: " + name)
+    return
+  }
   return f(payloads)
 }
 
