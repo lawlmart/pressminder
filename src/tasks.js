@@ -70,11 +70,13 @@ export async function finishedScan(data) {
 
     for (const placement of data.placements) {
       console.log("inserting data: " + JSON.stringify(placement))
-      await client.query('INSERT INTO placement (page, link, started, new, title, top, "left", height, width, font_size) \
-                          VALUES ($1, $2, now(), TRUE, $3, $4, $5, $6, $7, $8) \
+      await client.query('INSERT INTO placement (page, link, started, new, title, top, "left", \
+                          height, width, font_size, section, screenshot) \
+                          VALUES ($1, $2, now(), TRUE, $3, $4, $5, $6, $7, $8, $9. $10) \
                           ON CONFLICT (page, link, title, top, font_size) DO UPDATE SET ended = NULL', 
                           [data.url, placement.url, placement.title, placement.top, placement.left, 
-                            placement.height, placement.width, placement.fontSize])
+                            placement.height, placement.width, placement.fontSize, 
+                            placement.section, placement.screenshot])
     }
 
     const res = await client.query('SELECT link FROM placement \

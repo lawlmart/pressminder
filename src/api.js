@@ -21,6 +21,10 @@ const renderPage = function (body) {
   `
 };
 
+const getCurrentArticlesOnPage = async function(url) {
+
+}
+
 const getArticles = async function(count, offset) {
   const articles = []  
 
