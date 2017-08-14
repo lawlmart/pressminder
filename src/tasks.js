@@ -72,7 +72,7 @@ export async function finishedScan(data) {
       console.log("inserting data: " + JSON.stringify(placement))
       await client.query('INSERT INTO placement (page, link, started, new, title, top, "left", height, width, font_size) \
                           VALUES ($1, $2, now(), TRUE, $3, $4, $5, $6, $7, $8) \
-                          ON CONFLICT (page, link, title) DO UPDATE SET ended = NULL', 
+                          ON CONFLICT (page, link, title, top, font_size) DO UPDATE SET ended = NULL', 
                           [data.url, placement.url, placement.title, placement.top, placement.left, 
                             placement.height, placement.width, placement.fontSize])
     }
