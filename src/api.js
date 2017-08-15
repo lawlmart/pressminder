@@ -36,7 +36,7 @@ const getArticles = async function(count, offset) {
     WHERE t.top = placement.top AND t.url = placement.url AND v.url = placement.url AND \
     version.timestamp = v.timestamp  \
     GROUP BY placement.page, placement.top, placement.url, version.title, version.timestamp, \
-    version.keywords, version.generated_keywords ORDER BY top ASC LIMIT $1 OFFSET $2", [limit, offset])
+    version.keywords, version.generated_keywords ORDER BY top ASC LIMIT $1 OFFSET $2", [count, offset])
     
     for (const row of res.rows) {
       articles.push({
