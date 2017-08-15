@@ -21,10 +21,6 @@ const renderPage = function (body) {
   `
 };
 
-const getCurrentArticlesOnPage = async function(url) {
-
-}
-
 const getArticles = async function(count, offset) {
   const articles = []  
 
@@ -32,38 +28,23 @@ const getArticles = async function(count, offset) {
   await client.connect()
   try {
 
-    const res = await client.query("SELECT version.url, version.title, p.started, \
-                                            version.text, version.timestamp, version.authors \
-                                    FROM article, version, \
-                                    (SELECT placement.url, MAX(placement.started) as started FROM placement WHERE placement.ended IS NULL GROUP BY placement.url) p \
-                                    WHERE p.url = article.url AND version.url = p.url AND p.url IS NOT NULL \
-                                    GROUP BY version.url, version.title, p.started, \
-                                              version.text, version.timestamp, version.authors \
-                                    ORDER BY p.started DESC, version.timestamp ASC LIMIT $1 OFFSET $2", [count, offset])
+    const res = await client.query("SELECT MIN(placement.started) as first_seen, placement.page, \
+    placement.top, placement.url, version.title, version.timestamp, version.keywords, \
+    version.generated_keywords FROM placement, version, (SELECT url, max(timestamp) as timestamp \
+    FROM version GROUP BY url) v, \
+    (SELECT url, max(top) as top FROM placement WHERE ended IS NULL GROUP BY url) t \
+    WHERE t.top = placement.top AND t.url = placement.url AND v.url = placement.url AND \
+    version.timestamp = v.timestamp  \
+    GROUP BY placement.page, placement.top, placement.url, version.title, version.timestamp, \
+    version.keywords, version.generated_keywords ORDER BY top ASC LIMIT $1 OFFSET $2", [limit, offset])
     
-    let lastId = null  
-
     for (const row of res.rows) {
-      if (row.url != lastId) {
-        articles.push({
-          url: row.url,
-          since:  row.started,
-          versions: [{
-            text: row.text,
-            timestamp: row.timestamp,
-            authors: row.authors,
-            title: row.title,
-          }]
-        })
-      } else {
-        articles.slice(-1)[0].versions.push({
-          test: row.text,
-          timestamp: row.timestamp,
-          authors: row.authors,
-          title: row.title
-        })
-      }
-      lastId = row.url
+      articles.push({
+        url: row.url,
+        since: row.first_seen,
+        page: row.page,
+        title: row.title
+      })
     }
   }
   catch (err) {
@@ -78,10 +59,8 @@ api.get('/', async (request) => {
   const count = request.queryString.count || 50
   const page = request.queryString.page || 1
   const articles = await getArticles(count, (page-1) * count)
-  return renderPage(articles.map(a => "<div><a href='" + a.url + "'>" +
-    (a.versions.length ? a.versions.slice(-1)[0].title : 'loading ...') + "</a> " + 
+  return renderPage(articles.map(a => "<div><a href='" + a.url + "'>" + a.title + "</a> " + 
     " <span>" + (a.since ? moment(a.since).fromNow() : '') + "</span> " +
-    a.versions.map((v, idx) => "<a href='/article/" + encodeURIComponent(a.url) + "/version/" + idx.toString() + "'>" + moment(v.timestamp).fromNow() + "</a> ").join("") +
     "</div>").join(""))
 }, { success: { contentType: 'text/html'}});
 
