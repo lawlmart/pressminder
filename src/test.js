@@ -7,11 +7,11 @@ process.on('unhandledRejection', r => console.log(r));
 
 const api = require('./api')
 const context = {
-  done: () => {
-    console.log("done")
+  done: (err, result) => {
+    console.log(result)
   },
-  fail: () => {
-    console.log("fail")
+  fail: (err) => {
+    console.error(err)
   }
 }
 api.proxyRouter({

@@ -71,7 +71,6 @@ export async function finishedScan(data) {
                         AND page = $1', [data.url])
 
     for (const placement of data.placements) {
-      console.log("inserting data: " + JSON.stringify(placement))
       await client.query('INSERT INTO placement (page, link, started, new, title, top, "left", \
                           height, width, font_size, section, screenshot) \
                           VALUES ($1, $2, now(), TRUE, $3, $4, $5, $6, $7, $8, $9, $10) \
@@ -94,7 +93,7 @@ export async function finishedScan(data) {
     }
   } catch (err) {
     endSegment(segment)
-    console.error(err)
+    console.log("Error: " + err)
   } finally {
     endSegment(segment)
     await client.end()
@@ -170,7 +169,6 @@ export async function retrieveArticle(input) {
     endSegment(segment)
   } catch (err) {
     log(input.url, "Failed to retrieve article: " + err)
-    console.error(err)
     endSegment(segment)
   }
 }

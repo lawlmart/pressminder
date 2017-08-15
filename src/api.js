@@ -27,17 +27,17 @@ const getArticles = async function(count, offset) {
   const client = new Client()
   await client.connect()
   try {
-
+    console.log("loading articles")
     const res = await client.query("SELECT MIN(placement.started) as first_seen, placement.page, \
     placement.top, placement.url, version.title, version.timestamp, version.keywords, \
     version.generated_keywords FROM placement, version, (SELECT url, max(timestamp) as timestamp \
     FROM version GROUP BY url) v, \
-    (SELECT url, max(top) as top FROM placement WHERE ended IS NULL GROUP BY url) t \
+    (SELECT url, min(top) as top FROM placement WHERE ended IS NULL GROUP BY url) t \
     WHERE t.top = placement.top AND t.url = placement.url AND v.url = placement.url AND \
     version.timestamp = v.timestamp  \
     GROUP BY placement.page, placement.top, placement.url, version.title, version.timestamp, \
     version.keywords, version.generated_keywords ORDER BY top ASC LIMIT $1 OFFSET $2", [count, offset])
-    
+    console.log("loaded " + res.rows.length.toString() + " articles")
     for (const row of res.rows) {
       articles.push({
         url: row.url,
@@ -48,7 +48,7 @@ const getArticles = async function(count, offset) {
     }
   }
   catch (err) {
-    console.error(err)
+    console.log("Error: " + err)
   } finally {
     await client.end()
   }
