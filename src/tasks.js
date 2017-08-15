@@ -10,8 +10,10 @@ const chrono = require('chrono-node')
 const _ = require('lodash')
 const Promise = require("bluebird")
 const redis = Promise.promisifyAll(require("redis"));
-const createThrottle = require('async-throttle')
 const S3 = require('aws-sdk/clients/s3');
+const retextKeywords = require('retext-keywords');
+const retext = require('retext');
+const nlcstToString = require('nlcst-to-string');
  
 import moment from 'moment'
 import { trigger } from './events'
@@ -228,12 +230,6 @@ export async function checkArticles() {
                               ON social.url = article.url AND social.timestamp > now() - interval '1 day' \
                               WHERE social.url IS NULL AND article.first_checked > now() - interval '7 day'")
     
-
-    const throttle = createThrottle(1)
-    for (const row of res.rows) {
-      log(row.url, "Stale social, requesting update")
-      await checkSocial(row.url, client)
-    }
   }
   catch (err) {
     endSegment(segment)
@@ -242,6 +238,23 @@ export async function checkArticles() {
     endSegment(segment)
     await client.end()
   }
+}
+
+async function processKeywords(text) {
+  return new Promise((resolve, reject) => {
+    retext()
+    .use(retextKeywords)
+    .process(text, function (err, file) {
+      const keywords = new Set()
+      file.data.keyphrases.forEach(function (phrase) {
+        keywords.add(phrase.matches[0].nodes.map(nlcstToString).join(''))
+      });
+      file.data.keywords.forEach(function (keyword) {
+        keywords.add(nlcstToString(keyword.matches[0].node))
+      });
+      resolve(Array.from(keywords))
+    });
+  })
 }
 
 export async function processArticles(articles) {
@@ -274,10 +287,12 @@ export async function processArticles(articles) {
       if (article.text) {
         const versions = await getVersions(article.url, client)
         if (!versions.length || versions.slice(-1)[0].text != article.text) {
-          await client.query('INSERT INTO version (url, text, title, links, authors, keywords, published) \
-                          VALUES ($1, $2, $3, $4, $5, $6, $7)', 
+          const generatedKeywords = await processKeywords(article.text)
+          console.log(generatedKeywords)
+          await client.query('INSERT INTO version (url, text, title, links, authors, keywords, published, generated_keywords) \
+                          VALUES ($1, $2, $3, $4, $5, $6, $7, $8)', 
                           [article.url, article.text, article.title, article.links, 
-                            article.authors, article.keywords, article.published])
+                            article.authors, article.keywords, article.published, generatedKeywords])
           log(article.url, "Saved new version")
         }
       }
