@@ -25,6 +25,7 @@ async function log(name, message) {
       host: process.env.REDIS_HOST || 'localhost'
     })
     await redisClient.lpushAsync("pressminder:log:" + name, moment().format('lll') + ": " + message)
+    await redisClient.expire("pressminder:log:" + name, 86400)
     await redisClient.quitAsync()
   } catch (err) {
     console.log("Unable to log: " + err)
