@@ -20,11 +20,15 @@ import { trigger } from './events'
 
 async function log(name, message) {
   console.log(name + " - " + message)
-  const redisClient = redis.createClient({
-    host: process.env.REDIS_HOST || 'localhost'
-  })
-  await redisClient.lpushAsync("pressminder:log:" + name, moment().format('lll') + ": " + message)
-  await redisClient.quitAsync()
+  try {
+    const redisClient = redis.createClient({
+      host: process.env.REDIS_HOST || 'localhost'
+    })
+    await redisClient.lpushAsync("pressminder:log:" + name, moment().format('lll') + ": " + message)
+    await redisClient.quitAsync()
+  } catch (err) {
+    console.log("Unable to log: " + err)
+  }
 }
 
 function startSegment(name, args) {
