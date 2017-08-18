@@ -61,16 +61,6 @@ export async function finishedScan(data) {
   const client = new Client()
   await client.connect()
   try {
-
-    if (data.screenshot) {
-      const s3 = new S3()
-      const params = {
-         Bucket: 'pressminder', 
-         Key: Math.round((new Date()).getTime() / 1000).toString() + "-" + data.url,
-         Body: new Buffer(data.screenshot, 'base64') 
-      }
-      await s3.pubObject(params).promise()
-    }
     await client.query('UPDATE placement SET ended = now(), new = FALSE \
                         WHERE ended IS NULL \
                         AND page = $1', [data.url])
@@ -82,7 +72,7 @@ export async function finishedScan(data) {
                           ON CONFLICT (page, link, title, top, font_size) DO UPDATE SET ended = NULL', 
                           [data.url, placement.url, placement.title, placement.top, placement.left, 
                             placement.height, placement.width, placement.fontSize, 
-                            placement.section, placement.screenshot])
+                            placement.section, data.screenshot])
     }
 
     const res = await client.query('SELECT link FROM placement \
