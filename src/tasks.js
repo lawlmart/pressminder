@@ -67,7 +67,7 @@ export async function finishedScan(data) {
 
     await client.query('UPDATE placement SET ended = now(), new = FALSE \
                         WHERE ended IS NULL \
-                        AND page = $1', [data.url])
+                        AND page = $1 AND platform = $2', [data.url, data.platform])
 
     for (const placement of data.placements) {
       await client.query('INSERT INTO placement (page, link, started, new, title, top, "left", \
