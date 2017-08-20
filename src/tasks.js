@@ -61,10 +61,10 @@ export async function finishedScan(data) {
   const client = new Client()
   await client.connect()
   try {
-    await client.query('INSERT INTO scan (url, screenshot, timestamp) \
+    let res = await client.query('INSERT INTO scan (url, screenshot, timestamp) \
                         VALUES ($1, $2, now()) RETURNING id', [data.url, data.screenshot])
     const scanId = res.rows[0].id     
-                  
+
     await client.query('UPDATE placement SET ended = now(), new = FALSE \
                         WHERE ended IS NULL \
                         AND page = $1', [data.url])
@@ -79,7 +79,7 @@ export async function finishedScan(data) {
                             placement.section, scanId, placement.platform])
     }
 
-    const res = await client.query('SELECT link FROM placement \
+    res = await client.query('SELECT link FROM placement \
                               WHERE new = TRUE AND ended IS NULL AND page = $1', [data.url])
 
     for (const row of res.rows) {
