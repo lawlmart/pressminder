@@ -21,7 +21,7 @@ const renderPage = function (body) {
   `
 };
 
-const getArticles = async function(count, offset) {
+const getArticles = async function(count, offset, platform) {
   const articles = []  
 
   const client = new Client()
@@ -34,9 +34,9 @@ const getArticles = async function(count, offset) {
     FROM version GROUP BY url) v, \
     (SELECT url, min(top) as top FROM placement WHERE ended IS NULL GROUP BY url) t \
     WHERE t.top = placement.top AND t.url = placement.url AND v.url = placement.url AND \
-    version.timestamp = v.timestamp  \
+    version.timestamp = v.timestamp AND placement.platform = $3 \
     GROUP BY placement.page, placement.top, placement.url, version.title, version.timestamp, \
-    version.keywords, version.generated_keywords ORDER BY top ASC LIMIT $1 OFFSET $2", [count, offset])
+    version.keywords, version.generated_keywords ORDER BY top ASC LIMIT $1 OFFSET $2", [count, offset, platform])
     console.log("loaded " + res.rows.length.toString() + " articles")
     for (const row of res.rows) {
       articles.push({
@@ -58,7 +58,8 @@ const getArticles = async function(count, offset) {
 api.get('/', async (request) => {
   const count = request.queryString.count || 50
   const page = request.queryString.page || 1
-  const articles = await getArticles(count, (page-1) * count)
+  const platform = request.queryString.platform
+  const articles = await getArticles(count, (page-1) * count, platform)
   return renderPage(articles.map(a => "<div><a href='" + a.url + "'>" + a.title + "</a> " + 
     " <span>" + (a.since ? moment(a.since).fromNow() : '') + "</span> " +
     "</div>").join(""))
