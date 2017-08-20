@@ -72,7 +72,7 @@ export async function finishedScan(data) {
                           ON CONFLICT (page, link, title, top, font_size, platform) DO UPDATE SET ended = NULL', 
                           [data.url, placement.url, placement.title, placement.top, placement.left, 
                             placement.height, placement.width, placement.fontSize, 
-                            placement.section, data.screenshot, data.platform])
+                            placement.section, data.screenshot, placement.platform])
     }
 
     const res = await client.query('SELECT link FROM placement \
