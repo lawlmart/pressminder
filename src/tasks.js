@@ -74,7 +74,7 @@ export async function finishedScan(data) {
       await client.query('INSERT INTO placement (link, started, new, title, top, "left", \
                           height, width, font_size, section, scan_id, scan_name) \
                           VALUES ($1, now(), TRUE, $2,  $3, $4, $5, $6, $7, $8, $9, $10) \
-                          ON CONFLICT (scan_name, link, title, top, font_size) DO UPDATE SET ended = NULL', 
+                          ON CONFLICT (scan_name, link, title, top, font_size, width) DO UPDATE SET ended = NULL', 
                           [placement.url, placement.title, placement.top, placement.left, 
                             placement.height, placement.width, placement.fontSize, 
                             placement.section, scanId, data.name])
@@ -133,7 +133,7 @@ export async function retrieveArticle(input) {
       published: chrono.parseDate(lazy.date()),
       links: lazy.links().map(l => l.href).filter(x => x.indexOf('.') != -1),
       _placementUrl: input.url,
-      _placementPage: input.page
+      _placementName: input.name
     }
 
     log(input.url, "Parsed desktop site: " + JSON.stringify(output))
@@ -269,16 +269,16 @@ export async function processArticles(articles) {
 
       log(article.url, "Updated articles db")
 
-      if (article._placementPage && article._placementUrl) {
+      if (article._placementName && article._placementUrl) {
         const updateResult = await client.query('UPDATE placement SET url = $1 \
-                            WHERE link = $2 AND page = $3', 
-                            [article.url, article._placementUrl, article._placementPage])
+                            WHERE link = $2 AND name = $3', 
+                            [article.url, article._placementUrl, article._placementName])
         if (updateResult.rowCount) {
           log(article.url, "Saved as canonical link of " + article._placementUrl)
           log(article._placementUrl, "Set canonical link to " + article.url)
         } else {
-          log(article.url, "Failed to save as canonical link of " + article._placementUrl + " on " + article._placementPage)
-          log(article._placementUrl, "Failed to set canonical link to " + article.url + " (" + article._placementPage + ")")
+          log(article.url, "Failed to save as canonical link of " + article._placementUrl + " on " + article._placementName)
+          log(article._placementUrl, "Failed to set canonical link to " + article.url + " (" + article._placementName + ")")
         }
       }
 
