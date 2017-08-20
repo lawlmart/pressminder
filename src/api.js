@@ -64,8 +64,8 @@ const getArticles = async function(count, offset, platform) {
 api.get('/', async (request) => {
   const count = request.queryString.count || 50
   const page = request.queryString.page || 1
-  const platform = request.queryString.platform
-  const articles = await getArticles(count, (page-1) * count, platform)
+  const name = request.queryString.name
+  const articles = await getArticles(count, (page-1) * count, name)
   return renderPage(articles.map(a => "<div><a href='" + a.url + "'>" + a.title + "</a> " + 
     " <span>" + (a.since ? moment(a.since).fromNow() : '') + "</span> " +
     "</div>").join(""))
