@@ -61,33 +61,34 @@ export async function finishedScan(data) {
   const client = new Client()
   await client.connect()
   try {
-    let res = await client.query('INSERT INTO scan (url, screenshot, timestamp, platform) \
-                        VALUES ($1, $2, now(), $3) RETURNING id', [data.url, data.screenshot, data.platform])
+    let res = await client.query('INSERT INTO scan (url, screenshot, timestamp, platform, name) \
+                        VALUES ($1, $2, now(), $3, $4) RETURNING id', 
+                        [data.url, data.screenshot, data.platform, data.name])
     const scanId = res.rows[0].id     
 
     await client.query('UPDATE placement SET ended = now(), new = FALSE \
                         WHERE ended IS NULL \
-                        AND page = $1 AND platform = $2', [data.url, data.platform])
+                        AND scan_name = $1', [data.scan_name])
 
     for (const placement of data.placements) {
-      await client.query('INSERT INTO placement (page, link, started, new, title, top, "left", \
-                          height, width, font_size, section, scan_id, platform) \
-                          VALUES ($1, $2, now(), TRUE, $3, $4, $5, $6, $7, $8, $9, $10, $11) \
-                          ON CONFLICT (page, link, title, top, font_size, platform) DO UPDATE SET ended = NULL', 
-                          [data.url, placement.url, placement.title, placement.top, placement.left, 
+      await client.query('INSERT INTO placement (link, started, new, title, top, "left", \
+                          height, width, font_size, section, scan_id, scan_name) \
+                          VALUES ($1, now(), TRUE, $2,  $3, $4, $5, $6, $7, $8, $9, $10) \
+                          ON CONFLICT (scan_name, link, title, top, font_size) DO UPDATE SET ended = NULL', 
+                          [placement.url, placement.title, placement.top, placement.left, 
                             placement.height, placement.width, placement.fontSize, 
-                            placement.section, scanId, data.platform])
+                            placement.section, scanId, data.name])
     }
 
     res = await client.query('SELECT link FROM placement \
-                              WHERE new = TRUE AND ended IS NULL AND page = $1', [data.url])
-
+                              WHERE new = TRUE AND ended IS NULL AND scan_name = $1', [data.name])
     for (const row of res.rows) {
+
       let link = row.link
       log(link, "Found on " + data.url)
       await trigger('url', {
         url: link,
-        page: data.url
+        name: data.name
       })
     }
   } catch (err) {
