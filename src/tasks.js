@@ -61,18 +61,22 @@ export async function finishedScan(data) {
   const client = new Client()
   await client.connect()
   try {
+    await client.query('INSERT INTO scan (url, screenshot, timestamp) \
+                        VALUES ($1, $2, now()) RETURNING id', [data.url, data.screenshot])
+    const scanId = res.rows[0].id     
+                  
     await client.query('UPDATE placement SET ended = now(), new = FALSE \
                         WHERE ended IS NULL \
                         AND page = $1', [data.url])
 
     for (const placement of data.placements) {
       await client.query('INSERT INTO placement (page, link, started, new, title, top, "left", \
-                          height, width, font_size, section, screenshot, platform) \
+                          height, width, font_size, section, scan_id, platform) \
                           VALUES ($1, $2, now(), TRUE, $3, $4, $5, $6, $7, $8, $9, $10, $11) \
                           ON CONFLICT (page, link, title, top, font_size, platform) DO UPDATE SET ended = NULL', 
                           [data.url, placement.url, placement.title, placement.top, placement.left, 
                             placement.height, placement.width, placement.fontSize, 
-                            placement.section, data.screenshot, placement.platform])
+                            placement.section, scanId, placement.platform])
     }
 
     const res = await client.query('SELECT link FROM placement \
