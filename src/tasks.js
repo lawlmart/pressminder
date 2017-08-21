@@ -132,8 +132,7 @@ export async function retrieveArticle(input) {
       url: lazy.canonicalLink(),
       published: chrono.parseDate(lazy.date()),
       links: lazy.links().map(l => l.href).filter(x => x.indexOf('.') != -1),
-      _placementUrl: input.url,
-      _placementName: input.name
+      _placementUrl: input.url
     }
 
     log(input.url, "Parsed desktop site: " + JSON.stringify(output))
@@ -269,16 +268,16 @@ export async function processArticles(articles) {
 
       log(article.url, "Updated articles db")
 
-      if (article._placementName && article._placementUrl) {
+      if (article._placementUrl) {
         const updateResult = await client.query('UPDATE placement SET url = $1 \
-                            WHERE link = $2 AND scan_name = $3', 
-                            [article.url, article._placementUrl, article._placementName])
+                            WHERE link = $2', 
+                            [article.url, article._placementUrl])
         if (updateResult.rowCount) {
           log(article.url, "Saved as canonical link of " + article._placementUrl)
           log(article._placementUrl, "Set canonical link to " + article.url)
         } else {
-          log(article.url, "Failed to save as canonical link of " + article._placementUrl + " on " + article._placementName)
-          log(article._placementUrl, "Failed to set canonical link to " + article.url + " (" + article._placementName + ")")
+          log(article.url, "Failed to save as canonical link of " + article._placementUrl)
+          log(article._placementUrl, "Failed to set canonical link to " + article.url)
         }
       }
 
