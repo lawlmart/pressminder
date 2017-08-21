@@ -33,9 +33,9 @@ const getArticles = async function(count, offset, name) {
     placement.top, placement.url, version.title, version.timestamp, version.keywords, \
     version.generated_keywords FROM placement, version, (SELECT url, max(timestamp) as timestamp \
     FROM version GROUP BY url) v, \
-    (SELECT url, min(top) as top FROM placement WHERE ended IS NULL GROUP BY url) t \
-    WHERE t.top = placement.top AND t.url = placement.url AND v.url = placement.url AND \
-    version.timestamp = v.timestamp"
+    (SELECT url, scan_name, min(top) as top FROM placement WHERE ended IS NULL GROUP BY url, scan_name) t \
+    WHERE t.top = placement.top AND t.url = placement.url AND t.scan_name = placement.scan_name \
+    AND v.url = placement.url AND version.timestamp = v.timestamp"
     if (name) {
       query += " AND placement.scan_name = $3"
       vars.push(name)
