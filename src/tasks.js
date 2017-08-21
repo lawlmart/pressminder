@@ -271,7 +271,7 @@ export async function processArticles(articles) {
 
       if (article._placementName && article._placementUrl) {
         const updateResult = await client.query('UPDATE placement SET url = $1 \
-                            WHERE link = $2 AND name = $3', 
+                            WHERE link = $2 AND scan_name = $3', 
                             [article.url, article._placementUrl, article._placementName])
         if (updateResult.rowCount) {
           log(article.url, "Saved as canonical link of " + article._placementUrl)
