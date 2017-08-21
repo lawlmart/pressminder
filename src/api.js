@@ -21,7 +21,7 @@ const renderPage = function (body) {
   `
 };
 
-const getArticles = async function(count, offset, platform) {
+const getArticles = async function(count, offset, name) {
   const articles = []  
 
   const client = new Client()
@@ -36,9 +36,9 @@ const getArticles = async function(count, offset, platform) {
     (SELECT url, min(top) as top FROM placement WHERE ended IS NULL GROUP BY url) t \
     WHERE t.top = placement.top AND t.url = placement.url AND v.url = placement.url AND \
     version.timestamp = v.timestamp"
-    if (platform) {
-      query += " AND placement.platform = $3"
-      vars.push(platform)
+    if (name) {
+      query += " AND placement.scan_name = $3"
+      vars.push(name)
     } 
     query += " GROUP BY placement.page, placement.top, placement.url, version.title, version.timestamp, \
     version.keywords, version.generated_keywords ORDER BY top ASC LIMIT $1 OFFSET $2"
