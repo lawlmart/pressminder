@@ -68,7 +68,7 @@ export async function finishedScan(data) {
 
     await client.query('UPDATE placement SET ended = now(), new = FALSE \
                         WHERE ended IS NULL \
-                        AND scan_name = $1', [data.scan_name])
+                        AND scan_name = $1', [data.name])
 
     for (const placement of data.placements) {
       await client.query('INSERT INTO placement (link, started, new, title, top, "left", \
