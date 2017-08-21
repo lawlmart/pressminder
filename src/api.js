@@ -29,7 +29,7 @@ const getArticles = async function(count, offset, name) {
   try {
     console.log("loading articles")
     let vars = [count, offset]
-    let query = "SELECT MIN(placement.started) as first_seen, placement.page, \
+    let query = "SELECT MIN(placement.started) as first_seen, placement.scan_name, \
     placement.top, placement.url, version.title, version.timestamp, version.keywords, \
     version.generated_keywords FROM placement, version, (SELECT url, max(timestamp) as timestamp \
     FROM version GROUP BY url) v, \
@@ -40,7 +40,7 @@ const getArticles = async function(count, offset, name) {
       query += " AND placement.scan_name = $3"
       vars.push(name)
     } 
-    query += " GROUP BY placement.page, placement.top, placement.url, version.title, version.timestamp, \
+    query += " GROUP BY placement.scan_name, placement.top, placement.url, version.title, version.timestamp, \
     version.keywords, version.generated_keywords ORDER BY top ASC LIMIT $1 OFFSET $2"
     const res = await client.query(query, vars)
     console.log("loaded " + res.rows.length.toString() + " articles")
@@ -48,7 +48,7 @@ const getArticles = async function(count, offset, name) {
       articles.push({
         url: row.url,
         since: row.first_seen,
-        page: row.page,
+        name: row.scan_name,
         title: row.title
       })
     }
