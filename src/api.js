@@ -43,7 +43,9 @@ const getArticles = async function(count, offset, name, platform) {
     if (platform) {
       query += " AND scan.platform = $"  + (vars.length + 1).toString()
       vars.push(platform)
-    } 
+    } else {
+      query += " AND scan.platform IS NULL"
+    }
     query += " GROUP BY placement.scan_name, scan.platform, placement.top, placement.url, version.title, version.timestamp, \
     version.keywords, version.generated_keywords ORDER BY top ASC LIMIT $1 OFFSET $2"
     const res = await client.query(query, vars)
