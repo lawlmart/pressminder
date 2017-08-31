@@ -64,7 +64,7 @@ export async function finishedScan(data) {
                           height, width, font_size, section, scan_id, scan_name) \
                           VALUES ($1, now(), TRUE, $2,  $3, $4, $5, $6, $7, $8, $9, $10) \
                           ON CONFLICT (scan_name, link, title, top, font_size, width) DO UPDATE SET ended = NULL', 
-                          [placement.url, placement.title, placement.top, placement.left, 
+                          [placement.url.substring(0,500), placement.title.substring(0,500), placement.top, placement.left, 
                             placement.height, placement.width, placement.fontSize, 
                             placement.section, scanId, data.name])
     }
