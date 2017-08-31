@@ -3,7 +3,6 @@ import  AWSXRay from 'aws-xray-sdk'
 import moment from 'moment'
 import { getVersions } from './tasks'
 const Promise = require("bluebird")
-const redis = Promise.promisifyAll(require("redis"));
 const Client = require('pg').Client
 const api = new ApiBuilder('AWS_PROXY');
 
@@ -76,16 +75,6 @@ api.get('/', async (request) => {
   return renderPage(articles.map(a => "<div><a href='" + a.url + "'>" + a.title + "</a> " + 
     " <span>" + (a.since ? moment(a.since).fromNow() : '') + "</span> " +
     "</div>").join(""))
-}, { success: { contentType: 'text/html'}});
-
-api.get('/logs', async (request) => {
-  const name = decodeURIComponent(request.queryString.name)
-  const redisClient = redis.createClient({
-    host: process.env.REDIS_HOST || 'localhost'
-  })
-  const logs = await redisClient.lrangeAsync("pressminder:log:" + name, 0, -1)
-  await redisClient.quitAsync()
-  return renderPage("<h1>" + name + "</h1>" + logs.join("<br/>"))
 }, { success: { contentType: 'text/html'}});
 
 api.get('/article/{id}', async (request) => {

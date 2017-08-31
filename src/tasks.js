@@ -9,7 +9,6 @@ const uuid = require('uuid/v4');
 const chrono = require('chrono-node')
 const _ = require('lodash')
 const Promise = require("bluebird")
-const redis = Promise.promisifyAll(require("redis"));
 const S3 = require('aws-sdk/clients/s3');
 const retextKeywords = require('retext-keywords');
 const retext = require('retext');
@@ -20,16 +19,6 @@ import { trigger } from './events'
 
 async function log(name, message) {
   console.log(name + " - " + message)
-  try {
-    const redisClient = redis.createClient({
-      host: process.env.REDIS_HOST || 'localhost'
-    })
-    await redisClient.lpushAsync("pressminder:log:" + name, moment().format('lll') + ": " + message)
-    await redisClient.expire("pressminder:log:" + name, 86400)
-    await redisClient.quitAsync()
-  } catch (err) {
-    console.log("Unable to log: " + err)
-  }
 }
 
 function startSegment(name, args) {
