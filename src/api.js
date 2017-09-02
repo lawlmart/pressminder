@@ -110,6 +110,38 @@ api.get('/article/{id}/version/{version}', async (request) => {
   return renderPage("<pre style='white-space: pre-wrap;'>" + versions[request.pathParams.version].text + "</pre>")
 }, { success: { contentType: 'text/html'}});
 
+api.get('/v1/publications', async (request) => {
+  let publications = []
+
+  const client = new Client()
+  await client.connect()
+  try {
+    let query = "SELECT p.name, p.timestamp, scan.screenshot FROM scan, \
+                 (SELECT publication.name as name, publication.default_scan_name as scan_name, \
+                   MAX(scan.timestamp) as timestamp FROM publication \
+                 JOIN scan ON scan.publication_id = publication.id \
+                 AND scan.name = publication.default_scan_name \
+                 GROUP BY publication.name, publication.default_scan_name) p \
+                 WHERE p.timestamp = scan.timestamp AND scan.name = p.scan_name"
+
+    const res = await client.query(query)
+    for (const row of res.rows) {
+      publications.push({
+        name: row.name,
+        timestamp: row.timestamp,
+        screenshot: row.screenshot
+      })
+    }
+  }
+  catch (err) {
+    console.error(err)
+  } finally {
+    await client.end()
+  }
+
+  return publications
+});
+
 api.intercept(function (request) {
   console.log(request)
   return request

@@ -16,7 +16,7 @@ const context = {
 }
 api.proxyRouter({
   requestContext: {
-    resourcePath: '/',
+    resourcePath: '/v1/publications',
     httpMethod: 'GET'
   },
 }, context)
