@@ -50,9 +50,9 @@ export async function finishedScan(data) {
   const client = new Client()
   await client.connect()
   try {
-    let res = await client.query('INSERT INTO scan (url, screenshot, timestamp, platform, name) \
-                        VALUES ($1, $2, now(), $3, $4) RETURNING id', 
-                        [data.url, data.screenshot, data.platform, data.name])
+    let res = await client.query('INSERT INTO scan (url, screenshot, timestamp, platform, name, publication_id) \
+                        VALUES ($1, $2, now(), $3, $4, $5) RETURNING id', 
+                        [data.url, data.screenshot, data.platform, data.name, data.publicationId])
     const scanId = res.rows[0].id     
 
     await client.query('UPDATE placement SET ended = now(), new = FALSE \
