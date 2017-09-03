@@ -149,6 +149,7 @@ api.get('/v1/publication/{id}/articles', async (request) => {
   await client.connect()
   try {
     const res = await client.query("SELECT default_scan_name FROM publication WHERE id = $1", [publicationId])
+    const scanName = res.rows[0].default_scan_name
     articles = await getArticles(3, 0, scanName)
   }
   catch (err) {
