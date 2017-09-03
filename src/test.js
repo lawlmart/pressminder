@@ -8,15 +8,18 @@ process.on('unhandledRejection', r => console.log(r));
 const api = require('./api')
 const context = {
   done: (err, result) => {
-    console.log(result)
+    console.log("Request finished: " + result)
   },
   fail: (err) => {
     console.error(err)
   }
 }
 api.proxyRouter({
+  pathParameters: {
+    id: 1
+  },
   requestContext: {
-    resourcePath: '/v1/publication/1/articles',
+    resourcePath: '/v1/publication/{id}/articles',
     httpMethod: 'GET'
   },
 }, context)

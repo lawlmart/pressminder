@@ -42,9 +42,7 @@ const getArticles = async function(count, offset, name, platform) {
     if (platform) {
       query += " AND scan.platform = $"  + (vars.length + 1).toString()
       vars.push(platform)
-    } else {
-      query += " AND scan.platform IS NULL"
-    }
+    } 
     query += " GROUP BY placement.scan_name, scan.platform, placement.top, placement.url, version.title, version.timestamp, \
     version.keywords, version.generated_keywords ORDER BY top ASC LIMIT $1 OFFSET $2"
     const res = await client.query(query, vars)
@@ -144,14 +142,13 @@ api.get('/v1/publication', async (request) => {
 });
 
 api.get('/v1/publication/{id}/articles', async (request) => {
-  let publicationId = request.pathParams.id
+  let publicationId = parseInt(request.pathParams.id)
   let articles = null
 
   const client = new Client()
   await client.connect()
   try {
     const res = await client.query("SELECT default_scan_name FROM publication WHERE id = $1", [publicationId])
-    const scanName = res.rows[0].default_scan_name
     articles = await getArticles(3, 0, scanName)
   }
   catch (err) {
@@ -161,11 +158,6 @@ api.get('/v1/publication/{id}/articles', async (request) => {
   }
 
   return articles
-});
-
-api.intercept(function (request) {
-  console.log(request)
-  return request
 });
 
 module.exports = api
