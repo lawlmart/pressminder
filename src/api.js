@@ -116,8 +116,11 @@ api.get('/v1/publication', async (request) => {
                  (SELECT publication.id as id, publication.name as name, publication.default_scan_name as scan_name, \
                    MAX(scan.timestamp) as timestamp FROM publication \
                  JOIN scan ON scan.publication_id = publication.id \
-                 AND scan.name = publication.default_scan_name \
-                 GROUP BY publication.id, publication.name, publication.default_scan_name) p \
+                 AND scan.name = publication.default_scan_name"
+    if (request.queryString.timestamp) {
+      query +=  " WHERE EXTRACT(epoch FROM scan.timestamp) < " + parseInt(request.queryString.timestamp).toString()
+    }
+    query +=    " GROUP BY publication.id, publication.name, publication.default_scan_name) p \
                  WHERE p.timestamp = scan.timestamp AND scan.name = p.scan_name"
 
     const res = await client.query(query)
