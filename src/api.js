@@ -160,4 +160,20 @@ api.get('/v1/publication/{id}/articles', async (request) => {
   return articles
 });
 
+api.get('/v1/article/{id}', async (request) => {
+  let versions = []
+
+  const client = new Client()
+  await client.connect()
+  try {
+    versions = await getVersions(decodeURIComponent(request.pathParams.id), client)
+  }
+  catch (err) {
+    console.error(err)
+  } finally {
+    await client.end()
+  }
+  return versions
+});
+
 module.exports = api
