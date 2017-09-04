@@ -56,8 +56,8 @@ export async function finishedScan(data) {
                         [data.url, data.screenshot, data.platform, data.name, data.publicationId])
     const scanId = res.rows[0].id     
 
+    await client.query('BEGIN')
     try {
-      await client.query('BEGIN')
       await client.query('UPDATE placement SET ended = now(), new = FALSE \
                           WHERE ended IS NULL \
                           AND scan_name = $1', [data.name])
@@ -73,8 +73,8 @@ export async function finishedScan(data) {
       }
       await client.query('COMMIT')
     } catch (err) {
+      console.log("ROLLING BACK Error: " + err)
       await client.query('ROLLBACK')
-      throw err
     }
 
     res = await client.query('SELECT link FROM placement \
