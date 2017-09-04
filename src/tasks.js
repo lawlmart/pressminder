@@ -50,23 +50,31 @@ export async function finishedScan(data) {
   const client = new Client()
   await client.connect()
   try {
+    
     let res = await client.query('INSERT INTO scan (url, screenshot, timestamp, platform, name, publication_id) \
                         VALUES ($1, $2, now(), $3, $4, $5) RETURNING id', 
                         [data.url, data.screenshot, data.platform, data.name, data.publicationId])
     const scanId = res.rows[0].id     
 
-    await client.query('UPDATE placement SET ended = now(), new = FALSE \
-                        WHERE ended IS NULL \
-                        AND scan_name = $1', [data.name])
+    try {
+      await client.query('BEGIN')
+      await client.query('UPDATE placement SET ended = now(), new = FALSE \
+                          WHERE ended IS NULL \
+                          AND scan_name = $1', [data.name])
 
-    for (const placement of data.placements) {
-      await client.query('INSERT INTO placement (link, started, new, title, top, "left", \
-                          height, width, font_size, section, scan_id, scan_name) \
-                          VALUES ($1, now(), TRUE, $2,  $3, $4, $5, $6, $7, $8, $9, $10) \
-                          ON CONFLICT (scan_name, link, title, top, font_size, width) DO UPDATE SET ended = NULL', 
-                          [placement.url.substring(0,500), placement.title.substring(0,500), placement.top, placement.left, 
-                            placement.height, placement.width, placement.fontSize, 
-                            placement.section, scanId, data.name])
+      for (const placement of data.placements) {
+        await client.query('INSERT INTO placement (link, started, new, title, top, "left", \
+                            height, width, font_size, section, scan_id, scan_name) \
+                            VALUES ($1, now(), TRUE, $2,  $3, $4, $5, $6, $7, $8, $9, $10) \
+                            ON CONFLICT (scan_name, link, title, top, font_size, width) DO UPDATE SET ended = NULL', 
+                            [placement.url.substring(0,500), placement.title.substring(0,500), placement.top, placement.left, 
+                              placement.height, placement.width, placement.fontSize, 
+                              placement.section, scanId, data.name])
+      }
+      await client.query('COMMIT')
+    } catch (err) {
+      await client.query('ROLLBACK')
+      throw err
     }
 
     res = await client.query('SELECT link FROM placement \
@@ -81,6 +89,7 @@ export async function finishedScan(data) {
       })
     }
   } catch (err) {
+    await client.query('ROLLBACK')
     endSegment(segment)
     console.log("Error: " + err)
   } finally {
