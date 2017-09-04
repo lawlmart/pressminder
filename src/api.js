@@ -26,7 +26,6 @@ const getArticles = async function(count, offset, name, platform) {
   const client = new Client()
   await client.connect()
   try {
-    console.log("loading articles")
     let vars = [count, offset]
     let query = "SELECT MIN(placement.started) as first_seen, scan.platform, placement.scan_name, \
     placement.top, placement.url, version.title, version.timestamp, version.keywords, \
@@ -46,7 +45,6 @@ const getArticles = async function(count, offset, name, platform) {
     query += " GROUP BY placement.scan_name, scan.platform, placement.top, placement.url, version.title, version.timestamp, \
     version.keywords, version.generated_keywords ORDER BY top ASC LIMIT $1 OFFSET $2"
     const res = await client.query(query, vars)
-    console.log("loaded " + res.rows.length.toString() + " articles")
     for (const row of res.rows) {
       articles.push({
         url: row.url,
@@ -144,13 +142,14 @@ api.get('/v1/publication', async (request) => {
 api.get('/v1/publication/{id}/articles', async (request) => {
   let publicationId = parseInt(request.pathParams.id)
   let articles = null
+  const count = request.queryString.count || 5
 
   const client = new Client()
   await client.connect()
   try {
     const res = await client.query("SELECT default_scan_name FROM publication WHERE id = $1", [publicationId])
     const scanName = res.rows[0].default_scan_name
-    articles = await getArticles(3, 0, scanName)
+    articles = await getArticles(count, 0, scanName)
   }
   catch (err) {
     console.error(err)
