@@ -20,18 +20,20 @@ const renderPage = function (body) {
   `
 };
 
-const getArticles = async function(count, offset, name, platform) {
+const getArticles = async function(count, offset, name, platform, timestamp) {
   const articles = []  
 
   const client = new Client()
   await client.connect()
   try {
-    let vars = [count, offset]
+    let vars = [timestamp || Math.round(Date.now() / 1000), count, offset]
     let query = "SELECT MIN(placement.started) as first_seen, scan.platform, placement.scan_name, \
     placement.top, placement.url, version.title, version.timestamp, version.keywords, \
     version.generated_keywords FROM placement, version, scan, (SELECT url, max(timestamp) as timestamp \
     FROM version GROUP BY url) v, \
-    (SELECT url, scan_name, min(top) as top FROM placement WHERE ended IS NULL GROUP BY url, scan_name) t \
+    (SELECT placement.url, placement.scan_name, min(placement.top) as top FROM placement \
+    JOIN scan ON placement.scan_id = scan.id WHERE placement.ended IS NULL AND \
+    EXTRACT (epoch FROM scan.timestamp) < $1 GROUP BY placement.url, placement.scan_name) t \
     WHERE t.top = placement.top AND t.url = placement.url AND t.scan_name = placement.scan_name \
     AND v.url = placement.url AND version.timestamp = v.timestamp AND scan.id = placement.scan_id"
     if (name) {
@@ -43,7 +45,7 @@ const getArticles = async function(count, offset, name, platform) {
       vars.push(platform)
     } 
     query += " GROUP BY placement.scan_name, scan.platform, placement.top, placement.url, version.title, version.timestamp, \
-    version.keywords, version.generated_keywords ORDER BY top ASC LIMIT $1 OFFSET $2"
+    version.keywords, version.generated_keywords ORDER BY top ASC LIMIT $2 OFFSET $3"
     const res = await client.query(query, vars)
     for (const row of res.rows) {
       articles.push({
@@ -152,7 +154,7 @@ api.get('/v1/publication/{id}/articles', async (request) => {
   try {
     const res = await client.query("SELECT default_scan_name FROM publication WHERE id = $1", [publicationId])
     const scanName = res.rows[0].default_scan_name
-    articles = await getArticles(count, 0, scanName)
+    articles = await getArticles(count, 0, scanName, null, request.queryString.timestamp)
   }
   catch (err) {
     console.error(err)
