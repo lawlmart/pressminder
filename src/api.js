@@ -20,6 +20,46 @@ const renderPage = function (body) {
   `
 };
 
+const getPlacements = async function(count, offset, name, timestamp) {
+  const placements = []  
+  
+  const client = new Client()
+  await client.connect()
+  try {
+    timestamp = timestamp || Math.round(Date.now() / 1000)
+    let vars = [timestamp, timestamp, count, offset]
+    let query = "SELECT placement.scan_name, \
+    placement.top, placement.url, version.title, version.timestamp, version.keywords, \
+    version.generated_keywords, version.published \
+    FROM placement, version, \
+    (SELECT url, max(timestamp) as timestamp \
+        FROM version GROUP BY url) v \
+    WHERE v.url = placement.url AND version.timestamp = v.timestamp AND \
+    EXTRACT(epoch FROM COALESCE(placement.ended, now())) >= $1 AND \
+    EXTRACT(epoch FROM placement.started) <= $2"
+    if (name) {
+      query += " AND placement.scan_name = $" + (vars.length + 1).toString()
+      vars.push(name)
+    }
+    query += " ORDER BY top ASC LIMIT $3 OFFSET $4"
+    const res = await client.query(query, vars)
+    for (const row of res.rows) {
+      placements.push({
+        url: row.url,
+        since: row.published,
+        name: row.scan_name,
+        title: row.title
+      })
+    }
+  }
+  catch (err) {
+    console.log("Error: " + err)
+  } finally {
+    await client.end()
+  }
+  return placements
+}
+
 const getArticles = async function(count, offset, name, platform, timestamp) {
   const articles = []  
 
@@ -155,7 +195,7 @@ api.get('/v1/publication/{id}/articles', async (request) => {
   try {
     const res = await client.query("SELECT default_scan_name FROM publication WHERE id = $1", [publicationId])
     const scanName = res.rows[0].default_scan_name
-    articles = await getArticles(count, 0, scanName, null, request.queryString.timestamp)
+    articles = await getPlacements(count, 0, scanName, request.queryString.timestamp)
   }
   catch (err) {
     console.error(err)
