@@ -41,15 +41,20 @@ const getPlacements = async function(count, offset, name, timestamp) {
       query += " AND placement.scan_name = $" + (vars.length + 1).toString()
       vars.push(name)
     }
+    const seenUrls = {}
     query += " ORDER BY top ASC LIMIT $3 OFFSET $4"
     const res = await client.query(query, vars)
     for (const row of res.rows) {
+      if (seenUrls[row.url]) {
+        continue
+      }
       placements.push({
         url: row.url,
         since: row.published,
         name: row.scan_name,
         title: row.title
       })
+      seenUrls[row.url] = true
     }
   }
   catch (err) {
