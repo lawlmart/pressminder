@@ -29,7 +29,7 @@ const getPlacements = async function(count, offset, name, timestamp) {
     timestamp = timestamp || Math.round(Date.now() / 1000)
     let vars = [timestamp, timestamp, count, offset]
     let query = "SELECT placement.scan_name, \
-    placement.top, placement.url, version.title, version.timestamp, version.keywords, \
+    placement.top, placement.url, placement.title, version.timestamp, version.keywords, \
     version.generated_keywords, version.published \
     FROM placement, version, \
     (SELECT url, max(timestamp) as timestamp \
