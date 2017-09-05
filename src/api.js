@@ -26,14 +26,15 @@ const getArticles = async function(count, offset, name, platform, timestamp) {
   const client = new Client()
   await client.connect()
   try {
-    let vars = [timestamp || Math.round(Date.now() / 1000), count, offset]
+    timestamp = timestamp || Math.round(Date.now() / 1000)
+    let vars = [timestamp, timestamp, count, offset]
     let query = "SELECT MIN(placement.started) as first_seen, scan.platform, placement.scan_name, \
     placement.top, placement.url, version.title, version.timestamp, version.keywords, \
     version.generated_keywords FROM placement, version, scan, (SELECT url, max(timestamp) as timestamp \
     FROM version GROUP BY url) v, \
     (SELECT placement.url, placement.scan_name, min(placement.top) as top FROM placement \
-    JOIN scan ON placement.scan_id = scan.id WHERE placement.ended IS NULL AND \
-    EXTRACT (epoch FROM scan.timestamp) < $1 GROUP BY placement.url, placement.scan_name) t \
+    WHERE EXTRACT(epoch FROM COALESCE(placement.ended, now())) >= $1 AND EXTRACT(epoch FROM placement.started) <= $2 \
+    GROUP BY placement.url, placement.scan_name) t \
     WHERE t.top = placement.top AND t.url = placement.url AND t.scan_name = placement.scan_name \
     AND v.url = placement.url AND version.timestamp = v.timestamp AND scan.id = placement.scan_id"
     if (name) {
@@ -45,7 +46,7 @@ const getArticles = async function(count, offset, name, platform, timestamp) {
       vars.push(platform)
     } 
     query += " GROUP BY placement.scan_name, scan.platform, placement.top, placement.url, version.title, version.timestamp, \
-    version.keywords, version.generated_keywords ORDER BY top ASC LIMIT $2 OFFSET $3"
+    version.keywords, version.generated_keywords ORDER BY top ASC LIMIT $3 OFFSET $4"
     const res = await client.query(query, vars)
     for (const row of res.rows) {
       articles.push({
