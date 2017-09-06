@@ -150,7 +150,7 @@ api.get('/article/{id}/version/{version}', async (request) => {
   return renderPage("<pre style='white-space: pre-wrap;'>" + versions[request.pathParams.version].text + "</pre>")
 }, { success: { contentType: 'text/html'}});
 
-api.get('/v1/publication', async (request) => {
+api.get('/v1/publication/{timestamp}', async (request) => {
   let publications = []
 
   const client = new Client()
@@ -161,8 +161,8 @@ api.get('/v1/publication', async (request) => {
                    MAX(scan.timestamp) as timestamp FROM publication \
                  JOIN scan ON scan.publication_id = publication.id \
                  AND scan.name = publication.default_scan_name"
-    if (request.queryString.timestamp) {
-      query +=  " WHERE EXTRACT(epoch FROM scan.timestamp) < " + parseInt(request.queryString.timestamp).toString()
+    if (request.pathParams.timestamp) {
+      query +=  " WHERE EXTRACT(epoch FROM scan.timestamp) < " + parseInt(request.pathParams.timestamp).toString()
     }
     query +=    " GROUP BY publication.id, publication.name, publication.default_scan_name) p \
                  WHERE p.timestamp = scan.timestamp AND scan.name = p.scan_name"
@@ -186,7 +186,7 @@ api.get('/v1/publication', async (request) => {
   return publications
 });
 
-api.get('/v1/publication/{id}/articles', async (request) => {
+api.get('/v1/publication/{id}/articles/{timestamp}', async (request) => {
   let publicationId = parseInt(request.pathParams.id)
   let articles = null
   const count = request.queryString.count || 5
@@ -196,7 +196,7 @@ api.get('/v1/publication/{id}/articles', async (request) => {
   try {
     const res = await client.query("SELECT default_scan_name FROM publication WHERE id = $1", [publicationId])
     const scanName = res.rows[0].default_scan_name
-    articles = await getPlacements(count, 0, scanName, request.queryString.timestamp)
+    articles = await getPlacements(count, 0, scanName, request.pathParams.timestamp)
   }
   catch (err) {
     console.error(err)
