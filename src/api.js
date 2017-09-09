@@ -150,10 +150,7 @@ api.get('/article/{id}/version/{version}', async (request) => {
   return renderPage("<pre style='white-space: pre-wrap;'>" + versions[request.pathParams.version].text + "</pre>")
 }, { success: { contentType: 'text/html'}});
 
-api.get('/v1/publication', async (request) => {
-})
-
-api.get('/v1/publication/{timestamp}', async (request) => {
+api.get('/v1/{timestamp}/publication', async (request) => {
   let publications = []
 
   const client = new Client()
@@ -189,11 +186,7 @@ api.get('/v1/publication/{timestamp}', async (request) => {
   return publications
 });
 
-api.get('/v1/publication/{id}/articles', async (request) => {
-
-})
-
-api.get('/v1/publication/{id}/articles/{timestamp}', async (request) => {
+api.get('/v1/{timestamp}/publication/{id}/articles', async (request) => {
   let publicationId = parseInt(request.pathParams.id)
   let articles = null
   const count = request.queryString.count || 5
