@@ -71,7 +71,7 @@ const getArticles = async function(count, offset, name, platform, timestamp) {
       if (!currentScan) {
         currentScan = {
           articles: [],
-          scanName: row.scan_name,
+          scan_name: row.scan_name,
           screenshot: row.screenshot
         }
       }
@@ -290,13 +290,14 @@ async function processKeywords(text) {
 }
 
 export async function snapshot(segment) {
-
   const client = new pg.Client()
   await client.connect()
   try {
     const articles = await getArticles()
-    await client.query('INSERT INTO snapshot (timestamp, content) VALUES (now(), $1)', [JSON.stringify(articles)])
-    
+    for (let scan in articles) {
+      await client.query('INSERT INTO snapshot (timestamp, scan_name, screenshot, articles) VALUES (now(), $1, $2, $3)', 
+        [scan.scan_name, scan.screenshot, JSON.stringify(scan.articles)])
+    }    
   }
   catch (err) {
     console.error(err)
