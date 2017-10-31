@@ -45,6 +45,8 @@ function endSegment(segment) {
 }
 
 const getArticles = async function(count, offset, name, platform, timestamp) {
+  const segment = await startSegment('getArticles', {count, offset, name, platform, timestamp})
+
   const scans = []
   const client = new Client()
   await client.connect()
@@ -105,8 +107,10 @@ const getArticles = async function(count, offset, name, platform, timestamp) {
   }
   catch (err) {
     console.log("Error getArticles: " + err + " " + err.stack)
+    endSegment(segment)
   } finally {
     await client.end()
+    endSegment(segment)
   }
   return scans
 }
