@@ -88,7 +88,7 @@ const getArticles = async function(count, offset, name, platform, timestamp) {
   return scans
 }
 
-export async function finishedScan(data) {
+export async function finishedScan(data, segment) {
   const client = new pg.Client()
   await client.connect()
   try {
@@ -138,7 +138,7 @@ export async function finishedScan(data) {
   }
 }
 
-export async function retrieveArticle(input) {
+export async function retrieveArticle(input, segment) {
   if (!input.url) {
     console.log("No url provided to retrieve article!")
     return
@@ -234,7 +234,7 @@ async function checkSocial(url, client) {
                       [url, tweetTimestamps.length, earliest])
 }
 
-export async function checkArticles() {
+export async function checkArticles(segment) {
   
   const client = new pg.Client()
   await client.connect()
@@ -284,7 +284,7 @@ async function processKeywords(text) {
   })
 }
 
-export async function snapshot() {
+export async function snapshot(segment) {
 
   const client = new pg.Client()
   await client.connect()
@@ -301,7 +301,7 @@ export async function snapshot() {
 }
 
 
-export async function processArticles(articles) {
+export async function processArticles(articles, segment) {
   const client = new pg.Client()
   await client.connect()
 

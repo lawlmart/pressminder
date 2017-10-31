@@ -60,39 +60,37 @@ export function parseEvents(event) {
 
 
 function makeMulti(f) {
-  return async (inputs) => {
+  return async (inputs, segment) => {
     const promises = []
     for (const input of inputs) {
-      promises.push(f(input))
+      promises.push(f(input, segment))
     }
     return Promise.all(promises)
   }
 }
 
-export async function executeEvents(name, payloads) {
+export async function executeEvents(name, payloads, segment) {
   let f
   if (name == 'article') {
-    f = tasks.processArticles
+    return tasks.processArticles(payloads, segment)
   } else if (name == 'url') {
-    f = makeMulti(tasks.retrieveArticle)
+    return makeMulti(tasks.retrieveArticle)(payloads, segment)
   } else if (name == 'scan_complete') {
-    f = makeMulti(tasks.finishedScan)
+    return makeMulti(tasks.finishedScan)(payloads, segment)
   } else if (name == 'check') {
-    f = tasks.checkArticles
+    return tasks.checkArticles(segment)
   } else if (name == 'snapshot') {
-    f = tasks.snapshot
+    return tasks.snapshot(segment)
   } else {
     console.log("Unrecognized event: " + name)
-    return
   }
-  return f(payloads)
 }
 
-export async function trigger(name, data) {
+export async function trigger(name, data, segment) {
   if (process.env.NODE_ENV == 'production') {
     return await sendToStream('pressminder', name, data)
   } else {
     console.log("Executing event " + name + " immediately")
-    return await executeEvents(name, [data]);
+    return await executeEvents(name, [data], segment);
   }
 }
