@@ -2,7 +2,7 @@ import ApiBuilder from 'claudia-api-builder'
 import moment from 'moment'
 import { getVersions, getArticles } from './tasks'
 const Promise = require("bluebird")
-var pg = AWSXRay.capturePostgres(require('pg'));
+var pg = require('pg');
 var Client = new pg.Client;
 const api = new ApiBuilder('AWS_PROXY');
 
