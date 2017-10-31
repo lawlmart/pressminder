@@ -2,8 +2,7 @@ import ApiBuilder from 'claudia-api-builder'
 import moment from 'moment'
 import { getVersions, getArticles } from './tasks'
 const Promise = require("bluebird")
-var pg = require('pg');
-var Client = new pg.Client;
+const pg = require('pg');
 const api = new ApiBuilder('AWS_PROXY');
 
 const renderPage = function (body) {
@@ -23,7 +22,7 @@ const renderPage = function (body) {
 const getPlacements = async function(count, offset, name, timestamp) {
   const placements = []  
   
-  const client = new Client()
+  const client = new pg.Client()
   await client.connect()
   try {
     timestamp = timestamp || Math.round(Date.now() / 1000)
@@ -73,7 +72,7 @@ api.get('/', async (request) => {
 api.get('/v1/{timestamp}/publication', async (request) => {
   let publications = []
 
-  const client = new Client()
+  const client = new pg.Client()
   await client.connect()
   try {
     let query = "SELECT p.id, p.name, p.timestamp, scan.screenshot FROM scan, \
@@ -111,7 +110,7 @@ api.get('/v1/{timestamp}/publication/{id}/articles', async (request) => {
   let articles = null
   const count = request.queryString.count || 5
 
-  const client = new Client()
+  const client = new pg.Client()
   await client.connect()
   try {
     const res = await client.query("SELECT default_scan_name FROM publication WHERE id = $1", [publicationId])
@@ -130,7 +129,7 @@ api.get('/v1/{timestamp}/publication/{id}/articles', async (request) => {
 api.get('/v1/article/{id}', async (request) => {
   let versions = []
 
-  const client = new Client()
+  const client = new pg.Client()
   await client.connect()
   try {
     versions = await getVersions(decodeURIComponent(request.pathParams.id), client)
@@ -146,12 +145,12 @@ api.get('/v1/article/{id}', async (request) => {
 api.get('/v1/snapshot/{names}', async (request) => {
   let output = {}
 
-  const client = new Client()
+  const client = new pg.Client()
   await client.connect()
   try {
     const timestamp = request.queryString.timestamp
     const names = request.pathParams.names.split(',')
-    
+
     for (let name of names) {
       const res = await client.query('SELECT articles, screenshot FROM snapshot \
         WHERE scan_name = %1 ORDER BY %2 - timestamp ASC LIMIT 1', [name, timestamp])
