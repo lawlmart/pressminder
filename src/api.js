@@ -1,6 +1,8 @@
 import ApiBuilder from 'claudia-api-builder'
 import moment from 'moment'
 import { getVersions, getArticles } from './tasks'
+import  AWSXRay from 'aws-xray-sdk'
+
 const Promise = require("bluebird")
 const pg = require('pg');
 const api = new ApiBuilder('AWS_PROXY');
@@ -142,6 +144,13 @@ api.get('/v1/article/{id}', async (request) => {
   return versions
 });
 
+api.get('/v1/now', async (request) => {
+  const segment = new AWSXRay.Segment('handler');
+  const articles = await getArticles(segment)
+  segment.close();
+  return articles
+})
+
 api.get('/v1/snapshot/{names}', async (request) => {
   let output = {}
 
@@ -156,14 +165,15 @@ api.get('/v1/snapshot/{names}', async (request) => {
       if (timestamp) {
         res = await client.query('SELECT articles, screenshot FROM snapshot \
         WHERE scan_name = $1 ORDER BY $2 - timestamp ASC LIMIT 1', [name, timestamp])
+        if (res.rows.length) {
+          output.articles = JSON.parse(res.rows[0].articles)
+          output.screenshot = res.rows[0].screenshot
+        }
       } else {
         res = await client.query('SELECT articles, screenshot FROM snapshot \
         WHERE scan_name = $1 ORDER BY timestamp ASC LIMIT 1', [name])
       }
-      if (res.rows.length) {
-        output.articles = JSON.parse(res.rows[0].articles)
-        output.screenshot = res.rows[0].screenshot
-      }
+      
     }
   }
   catch (err) {

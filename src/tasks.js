@@ -20,7 +20,7 @@ async function log(name, message) {
   console.log(name + " - " + message)
 }
 
-const getArticles = async function(segment, count, offset, name, platform, timestamp) {
+export async function getArticles(segment, count, offset, name, platform, timestamp) {
   const scans = []
   const client = new pg.Client()
   await client.connect()

@@ -23,11 +23,8 @@ const context = {
   }
 }
 api.proxyRouter({
-  pathParameters: {
-    names: 'bbc'
-  },
   requestContext: {
-    resourcePath: '/v1/snapshot/{names}',
+    resourcePath: '/v1/now',
     httpMethod: 'GET'
   },
 }, context)
