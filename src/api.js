@@ -70,39 +70,6 @@ api.get('/', async (request) => {
   return renderPage("Welcome!")
 }, { success: { contentType: 'text/html'}});
 
-api.get('/article/{id}', async (request) => {
-  let versions = []
-
-  const client = new Client()
-  await client.connect()
-  try {
-    versions = await getVersions(decodeURIComponent(request.pathParams.id), client)
-  }
-  catch (err) {
-    console.error(err)
-  } finally {
-    await client.end()
-  }
-  const articles = []  
-  return renderPage("<pre style='white-space: pre-wrap;'>" + versions.slice(-1)[0].text + "</pre>")
-}, { success: { contentType: 'text/html'}});
-
-api.get('/article/{id}/version/{version}', async (request) => {
-  let versions = []
-
-  const client = new Client()
-  await client.connect()
-  try {
-    versions = await getVersions(decodeURIComponent(request.pathParams.id), client)
-  }
-  catch (err) {
-    console.error(err)
-  } finally {
-    await client.end()
-  }
-  return renderPage("<pre style='white-space: pre-wrap;'>" + versions[request.pathParams.version].text + "</pre>")
-}, { success: { contentType: 'text/html'}});
-
 api.get('/v1/{timestamp}/publication', async (request) => {
   let publications = []
 
@@ -174,6 +141,32 @@ api.get('/v1/article/{id}', async (request) => {
     await client.end()
   }
   return versions
+});
+
+api.get('/v1/snapshot/{names}', async (request) => {
+  let output = {}
+
+  const client = new Client()
+  await client.connect()
+  try {
+    const timestamp = request.queryString.timestamp
+    const names = request.pathParams.names.split(',')
+    
+    for (let name of names) {
+      const res = await client.query('SELECT articles, screenshot FROM snapshot \
+        WHERE scan_name = %1 ORDER BY %2 - timestamp ASC LIMIT 1', [name, timestamp])
+      if (res.rows.length) {
+        output[articles] = res.rows.articles
+        output[screenshot] = res.rows.screenshot
+      }
+    }
+  }
+  catch (err) {
+    console.error(err)
+  } finally {
+    await client.end()
+  }
+  return output
 });
 
 module.exports = api
