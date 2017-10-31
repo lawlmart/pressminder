@@ -64,12 +64,10 @@ const getArticles = async function(segment, count, offset, name, platform, times
     let currentScan = null
     for (const row of res.rows) {
       if (currentScan && currentScan.scan_name != row.scan_name) {
-        console.log("adding scan " + JSON.stringify(currentScan))
         scans.push(currentScan)
         currentScan = null     
       }
       if (!currentScan) {
-        console.log("creating scan " + row.scan_name)
         currentScan = {
           articles: [],
           scan_name: row.scan_name,
@@ -83,7 +81,6 @@ const getArticles = async function(segment, count, offset, name, platform, times
       })
     }
     if (currentScan) {
-      console.log("adding scan " + JSON.stringify(currentScan))
       scans.push(currentScan)
     }
   }
@@ -296,7 +293,7 @@ export async function snapshot(segment) {
   await client.connect()
   try {
     const articles = await getArticles(segment)
-    for (let scan in articles) {
+    for (let scan of articles) {
       await client.query('INSERT INTO snapshot (timestamp, scan_name, screenshot, articles) VALUES (now(), $1, $2, $3)', 
         [scan.scan_name, scan.screenshot, JSON.stringify(scan.articles)])
     }    
