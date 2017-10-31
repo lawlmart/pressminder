@@ -89,7 +89,7 @@ const getArticles = async function(count, offset, name, platform, timestamp) {
 
     let articles = []
     for (const row of res.rows) {
-      if (lastScaneName != row.scan_name) {
+      if (lastScanName != row.scan_name) {
         scans.push({
           articles: articles,
           scanName: scan_name
