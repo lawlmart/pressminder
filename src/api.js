@@ -112,9 +112,7 @@ api.get('/', async (request) => {
   const name = request.queryString.name
   const platform = request.queryString.platform
   const articles = await getArticles(count, (page-1) * count, name, platform)
-  return renderPage(articles.map(a => "<div><a href='" + a.url + "'>" + a.title + "</a> " + 
-    " <span>" + (a.since ? moment(a.since).fromNow() : '') + "</span> " +
-    "</div>").join(""))
+  return renderPage("Welcome!")
 }, { success: { contentType: 'text/html'}});
 
 api.get('/article/{id}', async (request) => {
