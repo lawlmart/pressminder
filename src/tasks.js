@@ -94,7 +94,8 @@ const getArticles = async function(count, offset, name, platform, timestamp) {
       if (lastScanName != row.scan_name) {
         scans.push({
           articles: articles,
-          scanName: scan_name
+          scanName: row.scan_name,
+          screenshot: row.screenshot
         })
         articles = []          
       }
