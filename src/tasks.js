@@ -26,7 +26,7 @@ export async function getArticles(segment, count, offset, name, platform, timest
   await client.connect()
   try {
     let vars = []
-    let query = "SELECT MIN(placement.started) as first_seen, scan.screenshot, scan.platform, placement.scan_name, \
+    let query = "SELECT MIN(placement.started) as first_seen, MAX(scan.screenshot), scan.platform, placement.scan_name, \
     placement.top, placement.url, version.title, version.timestamp, version.keywords, \
     version.generated_keywords FROM placement, version, scan, (SELECT url, max(timestamp) as timestamp \
     FROM version GROUP BY url) v, \
@@ -50,7 +50,7 @@ export async function getArticles(segment, count, offset, name, platform, timest
       query += " AND scan.platform = $"  + (vars.length + 1).toString()
       vars.push(platform)
     } 
-    query += " GROUP BY placement.scan_name, scan.screenshot, scan.platform, placement.top, placement.url, version.title, version.timestamp, \
+    query += " GROUP BY placement.scan_name, scan.platform, placement.top, placement.url, version.title, version.timestamp, \
     version.keywords, version.generated_keywords ORDER BY scan_name, top ASC"
     if (count) {
       query += " LIMIT $" + (vars.length + 1).toString()
