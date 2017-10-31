@@ -1,5 +1,5 @@
 const AWSXRay = require('aws-xray-sdk')
-var pg = require('pg');
+const pg = require('pg');
 const request = require('request-promise')
 const cheerio = require('cheerio')
 const fs = require('fs')
@@ -20,7 +20,7 @@ async function log(name, message) {
   console.log(name + " - " + message)
 }
 
-const getArticles = async function(count, offset, name, platform, timestamp) {
+const getArticles = async function(segment, count, offset, name, platform, timestamp) {
   const scans = []
   const client = new pg.Client()
   await client.connect()
@@ -60,7 +60,7 @@ const getArticles = async function(count, offset, name, platform, timestamp) {
       query += " OFFSET $" + (vars.length + 1).toString()
       vars.push(offset)
     }
-    const res = await client.query(query, vars)
+    const res = await client.query(query, vars, segment)
     let currentScan = null
     let articles = []
     for (const row of res.rows) {
@@ -100,14 +100,14 @@ export async function finishedScan(data, segment) {
     
     let res = await client.query('INSERT INTO scan (url, screenshot, timestamp, platform, name, publication_id) \
                         VALUES ($1, $2, now(), $3, $4, $5) RETURNING id', 
-                        [data.url, data.screenshot, data.platform, data.name, data.publicationId])
+                        [data.url, data.screenshot, data.platform, data.name, data.publicationId], segment)
     const scanId = res.rows[0].id     
 
     await client.query('BEGIN')
     try {
       await client.query('UPDATE placement SET ended = now(), new = FALSE \
                           WHERE ended IS NULL \
-                          AND scan_name = $1', [data.name])
+                          AND scan_name = $1', [data.name], segment)
 
       for (const placement of data.placements) {
         await client.query('INSERT INTO placement (link, started, new, title, top, "left", \
@@ -116,7 +116,7 @@ export async function finishedScan(data, segment) {
                             ON CONFLICT (scan_name, link, title, top, font_size, width) DO UPDATE SET ended = NULL', 
                             [placement.url.substring(0,500), placement.title.substring(0,500), placement.top, placement.left, 
                               placement.height, placement.width, placement.fontSize, 
-                              placement.section, scanId, data.name])
+                              placement.section, scanId, data.name], segment)
       }
       await client.query('COMMIT')
     } catch (err) {
@@ -125,7 +125,7 @@ export async function finishedScan(data, segment) {
     }
 
     res = await client.query('SELECT link FROM placement \
-                              WHERE new = TRUE AND ended IS NULL AND scan_name = $1', [data.name])
+                              WHERE new = TRUE AND ended IS NULL AND scan_name = $1', [data.name], segment)
     for (const row of res.rows) {
 
       let link = row.link
@@ -236,7 +236,7 @@ async function checkSocial(url, client) {
   }
   log(url, "Found " + tweetTimestamps.length + " tweets, earliest " + (earliest ? earliest.toLocaleString() : 'none'))
   await client.query("INSERT INTO social (url, timestamp, tweets, earliest_tweet) VALUES ($1, now(), $2, $3)",
-                      [url, tweetTimestamps.length, earliest])
+                      [url, tweetTimestamps.length, earliest], segment)
 }
 
 export async function checkArticles(segment) {
@@ -293,10 +293,10 @@ export async function snapshot(segment) {
   const client = new pg.Client()
   await client.connect()
   try {
-    const articles = await getArticles()
+    const articles = await getArticles(segment)
     for (let scan in articles) {
       await client.query('INSERT INTO snapshot (timestamp, scan_name, screenshot, articles) VALUES (now(), $1, $2, $3)', 
-        [scan.scan_name, scan.screenshot, JSON.stringify(scan.articles)])
+        [scan.scan_name, scan.screenshot, JSON.stringify(scan.articles)], segment)
     }    
   }
   catch (err) {
@@ -316,7 +316,7 @@ export async function processArticles(articles, segment) {
       const res = await client.query('INSERT INTO article (url, last_checked, first_checked) \
                 VALUES ($1, now(), now()) \
                 ON CONFLICT (url) DO UPDATE SET last_checked=now()', 
-                [article.url])
+                [article.url], segment)
 
       log(article.url, "Updated articles db")
 
@@ -341,7 +341,7 @@ export async function processArticles(articles, segment) {
           await client.query('INSERT INTO version (url, text, title, links, authors, keywords, published, generated_keywords) \
                           VALUES ($1, $2, $3, $4, $5, $6, $7, $8)', 
                           [article.url, article.text, article.title, article.links, 
-                            article.authors, article.keywords, article.published, generatedKeywords])
+                            article.authors, article.keywords, article.published, generatedKeywords], segment)
           log(article.url, "Saved new version")
         }
       }
