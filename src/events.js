@@ -1,5 +1,6 @@
 import kinesis from '@heroku/kinesis'
 import * as tasks from './tasks'
+import  AWSXRay from 'aws-xray-sdk'
 
 const sendToStream = (stream, type, payload) => {
   return new Promise((resolve, reject) => {
@@ -70,20 +71,26 @@ function makeMulti(f) {
 }
 
 export async function executeEvents(name, payloads, segment) {
-  let f
-  if (name == 'article') {
-    return tasks.processArticles(payloads, segment)
-  } else if (name == 'url') {
-    return makeMulti(tasks.retrieveArticle)(payloads, segment)
-  } else if (name == 'scan_complete') {
-    return makeMulti(tasks.finishedScan)(payloads, segment)
-  } else if (name == 'check') {
-    return tasks.checkArticles(segment)
-  } else if (name == 'snapshot') {
-    return tasks.snapshot(segment)
-  } else {
-    console.log("Unrecognized event: " + name)
-  }
+  return new Promise((resolve, reject) => {
+    AWSXRay.captureAsyncFunc(name, async (subsegment) => {
+      let result
+      if (name == 'article') {
+        result = await tasks.processArticles(payloads, subsegment)
+      } else if (name == 'url') {
+        result = await makeMulti(tasks.retrieveArticle)(payloads, subsegment)
+      } else if (name == 'scan_complete') {
+        result = await makeMulti(tasks.finishedScan)(payloads, subsegment)
+      } else if (name == 'check') {
+        result = await tasks.checkArticles(subsegment)
+      } else if (name == 'snapshot') {
+        result = await tasks.snapshot(subsegment)
+      } else {
+        console.log("Unrecognized event: " + name)
+      }
+      subsegment.close();
+      resolve(result)
+    }, segment);
+  })
 }
 
 export async function trigger(name, data, segment) {

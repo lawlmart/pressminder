@@ -7,7 +7,7 @@ console.log("Running tests")
 process.on('unhandledRejection', r => console.log(r));
 
 const segment = new AWSXRay.Segment('handler');
-trigger('snapshot', {}).then(() => {
+trigger('snapshot', {}, segment).then(() => {
   segment.close()
 })
 
