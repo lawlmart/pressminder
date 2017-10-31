@@ -152,8 +152,14 @@ api.get('/v1/snapshot/{names}', async (request) => {
     const names = request.pathParams.names.split(',')
 
     for (let name of names) {
-      const res = await client.query('SELECT articles, screenshot FROM snapshot \
+      let res
+      if (timestamp) {
+        res = await client.query('SELECT articles, screenshot FROM snapshot \
         WHERE scan_name = %1 ORDER BY %2 - timestamp ASC LIMIT 1', [name, timestamp])
+      } else {
+        res = await client.query('SELECT articles, screenshot FROM snapshot \
+        WHERE scan_name = %1 ORDER BY timestamp ASC LIMIT 1', [name])
+      }
       if (res.rows.length) {
         output[articles] = res.rows.articles
         output[screenshot] = res.rows.screenshot
