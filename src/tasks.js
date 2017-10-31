@@ -290,7 +290,7 @@ export async function snapshot(segment) {
   await client.connect()
   try {
     const articles = await getArticles()
-    await client.query('INSERT INTO snapshot (timestamp, content) VALUES (now(), $1)', [articles])
+    await client.query('INSERT INTO snapshot (timestamp, content) VALUES (now(), $1)', [JSON.stringify(articles)])
     
   }
   catch (err) {
