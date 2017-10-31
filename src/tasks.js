@@ -1,7 +1,5 @@
 const AWSXRay = require('aws-xray-sdk')
-AWSXRay.captureHTTPsGlobal(require('http'))
-const http = require('http')
-const Client = require('pg').Client
+var pg = require('pg');
 const request = require('request-promise')
 const cheerio = require('cheerio')
 const fs = require('fs')
@@ -11,7 +9,6 @@ const uuid = require('uuid/v4');
 const chrono = require('chrono-node')
 const _ = require('lodash')
 const Promise = require("bluebird")
-const S3 = require('aws-sdk/clients/s3');
 const retextKeywords = require('retext-keywords');
 const retext = require('retext');
 const nlcstToString = require('nlcst-to-string');
@@ -23,34 +20,9 @@ async function log(name, message) {
   console.log(name + " - " + message)
 }
 
-function startSegment(name, args) {
-  return new Promise((resolve, reject) => {
-    if (process.env.NODE_ENV !== 'production') {
-      resolve()
-      return
-    }
-
-    args = args || {}
-    AWSXRay.captureAsyncFunc(name, function(subsegment) {
-      for (let key of Object.keys(args)) {
-        subsegment.addAnnotation(key, args[key]);
-      }
-      resolve(subsegment)
-    });
-  })
-}
-
-function endSegment(segment) {
-  if (segment) {
-    segment.close()
-  }
-}
-
 const getArticles = async function(count, offset, name, platform, timestamp) {
-  const segment = await startSegment('getArticles')
-
   const scans = []
-  const client = new Client()
+  const client = new pg.Client()
   await client.connect()
   try {
     let vars = []
@@ -110,18 +82,14 @@ const getArticles = async function(count, offset, name, platform, timestamp) {
   }
   catch (err) {
     console.log("Error getArticles: " + err + " " + err.stack)
-    endSegment(segment)
   } finally {
     await client.end()
-    endSegment(segment)
   }
   return scans
 }
 
 export async function finishedScan(data) {
-  const segment = await startSegment('placements', {url: data.url})
-
-  const client = new Client()
+  const client = new pg.Client()
   await client.connect()
   try {
     
@@ -164,10 +132,8 @@ export async function finishedScan(data) {
     }
   } catch (err) {
     await client.query('ROLLBACK')
-    endSegment(segment)
     console.log("Error: " + err)
   } finally {
-    endSegment(segment)
     await client.end()
   }
 }
@@ -177,8 +143,6 @@ export async function retrieveArticle(input) {
     console.log("No url provided to retrieve article!")
     return
   }
-  
-  const segment = await startSegment('url', {url: input.url})
   try {
     log(input.url, "Requesting desktop site")
     const lazy = unfluff.lazy(await request({
@@ -237,10 +201,8 @@ export async function retrieveArticle(input) {
     }
     
     await trigger('article', output)
-    endSegment(segment)
   } catch (err) {
     log(input.url, "Failed to retrieve article: " + err)
-    endSegment(segment)
   }
 }
 
@@ -274,10 +236,8 @@ async function checkSocial(url, client) {
 
 export async function checkArticles() {
   
-  const client = new Client()
+  const client = new pg.Client()
   await client.connect()
-
-  const segment = await startSegment('check')
   try {
 
     let res = await client.query("SELECT url FROM article \
@@ -301,10 +261,8 @@ export async function checkArticles() {
     
   }
   catch (err) {
-    endSegment(segment)
     console.error(err)
   } finally {
-    endSegment(segment)
     await client.end()
   }
 }
@@ -327,14 +285,13 @@ async function processKeywords(text) {
 }
 
 export async function snapshot() {
-  const client = new Client()
-  await client.connect()
 
+  const client = new pg.Client()
+  await client.connect()
   try {
-    const segment = await startSegment('snapshot')
     const articles = await getArticles()
     await client.query('INSERT INTO snapshot (timestamp, content) VALUES (now(), $1)', [articles])
-    endSegment(segment)
+    
   }
   catch (err) {
     console.error(err)
@@ -345,12 +302,11 @@ export async function snapshot() {
 
 
 export async function processArticles(articles) {
-  const client = new Client()
+  const client = new pg.Client()
   await client.connect()
 
   try {
     for (let article of articles) {
-      const segment = await startSegment('article', {url: article.url})
       const res = await client.query('INSERT INTO article (url, last_checked, first_checked) \
                 VALUES ($1, now(), now()) \
                 ON CONFLICT (url) DO UPDATE SET last_checked=now()', 
@@ -383,7 +339,6 @@ export async function processArticles(articles) {
           log(article.url, "Saved new version")
         }
       }
-      endSegment(segment)
     }
   }
   catch (err) {

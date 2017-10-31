@@ -1,9 +1,9 @@
 import ApiBuilder from 'claudia-api-builder'
-import  AWSXRay from 'aws-xray-sdk'
 import moment from 'moment'
 import { getVersions, getArticles } from './tasks'
 const Promise = require("bluebird")
-const Client = require('pg').Client
+var pg = AWSXRay.capturePostgres(require('pg'));
+var Client = new pg.Client;
 const api = new ApiBuilder('AWS_PROXY');
 
 const renderPage = function (body) {
