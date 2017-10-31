@@ -1,7 +1,7 @@
 import ApiBuilder from 'claudia-api-builder'
 import  AWSXRay from 'aws-xray-sdk'
 import moment from 'moment'
-import { getVersions } from './tasks'
+import { getVersions, getArticles } from './tasks'
 const Promise = require("bluebird")
 const Client = require('pg').Client
 const api = new ApiBuilder('AWS_PROXY');
@@ -59,51 +59,6 @@ const getPlacements = async function(count, offset, name, timestamp) {
     await client.end()
   }
   return placements
-}
-
-const getArticles = async function(count, offset, name, platform, timestamp) {
-  const articles = []  
-
-  const client = new Client()
-  await client.connect()
-  try {
-    timestamp = timestamp || Math.round(Date.now() / 1000)
-    let vars = [timestamp, timestamp, count, offset]
-    let query = "SELECT MIN(placement.started) as first_seen, scan.platform, placement.scan_name, \
-    placement.top, placement.url, version.title, version.timestamp, version.keywords, \
-    version.generated_keywords FROM placement, version, scan, (SELECT url, max(timestamp) as timestamp \
-    FROM version GROUP BY url) v, \
-    (SELECT placement.url, placement.scan_name, min(placement.top) as top FROM placement \
-    WHERE EXTRACT(epoch FROM COALESCE(placement.ended, now())) >= $1 AND EXTRACT(epoch FROM placement.started) <= $2 \
-    GROUP BY placement.url, placement.scan_name) t \
-    WHERE t.top = placement.top AND t.url = placement.url AND t.scan_name = placement.scan_name \
-    AND v.url = placement.url AND version.timestamp = v.timestamp AND scan.id = placement.scan_id"
-    if (name) {
-      query += " AND placement.scan_name = $" + (vars.length + 1).toString()
-      vars.push(name)
-    } 
-    if (platform) {
-      query += " AND scan.platform = $"  + (vars.length + 1).toString()
-      vars.push(platform)
-    } 
-    query += " GROUP BY placement.scan_name, scan.platform, placement.top, placement.url, version.title, version.timestamp, \
-    version.keywords, version.generated_keywords ORDER BY top ASC LIMIT $3 OFFSET $4"
-    const res = await client.query(query, vars)
-    for (const row of res.rows) {
-      articles.push({
-        url: row.url,
-        since: row.first_seen,
-        name: row.scan_name,
-        title: row.title
-      })
-    }
-  }
-  catch (err) {
-    console.log("Error: " + err)
-  } finally {
-    await client.end()
-  }
-  return articles
 }
 
 api.get('/', async (request) => {

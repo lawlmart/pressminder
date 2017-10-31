@@ -79,6 +79,8 @@ export async function executeEvents(name, payloads) {
     f = makeMulti(tasks.finishedScan)
   } else if (name == 'check') {
     f = tasks.checkArticles
+  } else if (name == 'snapshot') {
+    f = tasks.snapshot
   } else {
     console.log("Unrecognized event: " + name)
     return

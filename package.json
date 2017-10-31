@@ -34,7 +34,7 @@
     "claudia": "^2.14.2"
   },
   "scripts": {
-    "test": "yarn run transpile && node bin/test.js",
+    "test": "yarn run transpile && PGDATABASE=pressminder node bin/test.js",
     "transpile": "babel src --out-dir bin",
     "create": "yarn run transpile && claudia create --region us-east-1 --handler bin/index.handler --timeout 60 --profile lawlmart",
     "update": "yarn run transpile && claudia update --profile lawlmart --aws-client-timeout 1000000",

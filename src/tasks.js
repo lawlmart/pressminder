@@ -44,6 +44,73 @@ function endSegment(segment) {
   }
 }
 
+const getArticles = async function(count, offset, name, platform, timestamp) {
+  const scans = []
+  const client = new Client()
+  await client.connect()
+  try {
+    let vars = []
+    let query = "SELECT MIN(placement.started) as first_seen, scan.screenshot, scan.platform, placement.scan_name, \
+    placement.top, placement.url, version.title, version.timestamp, version.keywords, \
+    version.generated_keywords FROM placement, version, scan, (SELECT url, max(timestamp) as timestamp \
+    FROM version GROUP BY url) v, \
+    (SELECT placement.url, placement.scan_name, min(placement.top) as top FROM placement "
+    if (timestamp) {
+      query += "WHERE EXTRACT(epoch FROM COALESCE(placement.ended, now())) >= $" + (vars.length + 1).toString() 
+      vars.push(timestamp)
+      query += " AND EXTRACT(epoch FROM placement.started) <= $" + (vars.length + 1).toString()
+      vars.push(timestamp)
+    } else {
+      query += "WHERE placement.ended IS NULL"
+    }
+    query += " GROUP BY placement.url, placement.scan_name) t \
+    WHERE t.top = placement.top AND t.url = placement.url AND t.scan_name = placement.scan_name \
+    AND v.url = placement.url AND version.timestamp = v.timestamp AND scan.id = placement.scan_id"
+    if (name) {
+      query += " AND placement.scan_name = $" + (vars.length + 1).toString()
+      vars.push(name)
+    } 
+    if (platform) {
+      query += " AND scan.platform = $"  + (vars.length + 1).toString()
+      vars.push(platform)
+    } 
+    query += " GROUP BY placement.scan_name, scan.screenshot, scan.platform, placement.top, placement.url, version.title, version.timestamp, \
+    version.keywords, version.generated_keywords ORDER BY scan_name, top ASC"
+    if (count) {
+      query += " LIMIT $" + (vars.length + 1).toString()
+      vars.push(count)
+    }
+    if (offset) {
+      query += " OFFSET $" + (vars.length + 1).toString()
+      vars.push(offset)
+    }
+    const res = await client.query(query, vars)
+    let lastScanName = null
+
+    let articles = []
+    for (const row of res.rows) {
+      if (lastScaneName != row.scan_name) {
+        scans.push({
+          articles: articles,
+          scanName: scan_name
+        })
+        articles = []          
+      }
+      articles.push({
+        url: row.url,
+        since: row.first_seen,
+        title: row.title
+      })
+    }
+  }
+  catch (err) {
+    console.log("Error getArticles: " + err + " " + err.stack)
+  } finally {
+    await client.end()
+  }
+  return scans
+}
+
 export async function finishedScan(data) {
   const segment = await startSegment('placements', {url: data.url})
 
@@ -258,7 +325,8 @@ export async function snapshot() {
 
   try {
     const segment = await startSegment('snapshot')
-    
+    const articles = await getArticles()
+    await client.query('INSERT INTO snapshot (timestamp, content) VALUES (now(), $1)', [articles])
     endSegment(segment)
   }
   catch (err) {
