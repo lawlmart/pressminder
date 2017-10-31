@@ -16,7 +16,7 @@ trigger('snapshot', {}, segment).then(() => {
 const api = require('./api')
 const context = {
   done: (err, result) => {
-    console.log("Request finished: " + result)
+    console.log("Request finished: " + JSON.stringify(result))
   },
   fail: (err) => {
     console.error(err)
