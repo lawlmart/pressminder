@@ -61,23 +61,28 @@ const getArticles = async function(count, offset, name, platform, timestamp) {
       vars.push(offset)
     }
     const res = await client.query(query, vars)
-    let lastScanName = null
-
+    let currentScan = null
     let articles = []
     for (const row of res.rows) {
-      if (lastScanName != row.scan_name) {
-        scans.push({
-          articles: articles,
+      if (currentScan && currentScan.scanName != row.scan_name) {
+        scans.push(currentScan)
+        currentScan = null     
+      }
+      if (!currentScan) {
+        currentScan = {
+          articles: [],
           scanName: row.scan_name,
           screenshot: row.screenshot
-        })
-        articles = []          
+        }
       }
       articles.push({
         url: row.url,
         since: row.first_seen,
         title: row.title
       })
+    }
+    if (currentScan) {
+      scans.push(currentScan)
     }
   }
   catch (err) {
