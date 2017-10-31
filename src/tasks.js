@@ -1,4 +1,6 @@
 const AWSXRay = require('aws-xray-sdk')
+AWSXRay.captureHTTPsGlobal(require('http'))
+const http = require('http')
 const Client = require('pg').Client
 const request = require('request-promise')
 const cheerio = require('cheerio')
@@ -45,7 +47,7 @@ function endSegment(segment) {
 }
 
 const getArticles = async function(count, offset, name, platform, timestamp) {
-  const segment = await startSegment('getArticles', {count, offset, name, platform, timestamp})
+  const segment = await startSegment('getArticles')
 
   const scans = []
   const client = new Client()
