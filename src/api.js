@@ -164,16 +164,15 @@ api.get('/v1/snapshot/{names}', async (request) => {
       let res
       if (timestamp) {
         res = await client.query('SELECT articles, screenshot FROM snapshot \
-        WHERE scan_name = $1 ORDER BY $2 - timestamp ASC LIMIT 1', [name, timestamp])
-        if (res.rows.length) {
-          output.articles = JSON.parse(res.rows[0].articles)
-          output.screenshot = res.rows[0].screenshot
-        }
+        WHERE scan_name = $1 ORDER BY $2 - timestamp ASC LIMIT 1', [name, timestamp])   
       } else {
         res = await client.query('SELECT articles, screenshot FROM snapshot \
         WHERE scan_name = $1 ORDER BY timestamp ASC LIMIT 1', [name])
       }
-      
+      if (res.rows.length) {
+        output.articles = JSON.parse(res.rows[0].articles)
+        output.screenshot = res.rows[0].screenshot
+      }
     }
   }
   catch (err) {
