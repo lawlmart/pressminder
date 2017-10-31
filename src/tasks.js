@@ -63,7 +63,7 @@ const getArticles = async function(segment, count, offset, name, platform, times
     const res = await client.query(query, vars)
     let currentScan = null
     for (const row of res.rows) {
-      if (currentScan && currentScan.scanName != row.scan_name) {
+      if (currentScan && currentScan.scan_name != row.scan_name) {
         console.log("adding scan " + JSON.stringify(currentScan))
         scans.push(currentScan)
         currentScan = null     
