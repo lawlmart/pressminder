@@ -77,7 +77,8 @@ export async function getArticles(segment, count, offset, name, platform, timest
       currentScan.articles.push({
         url: row.url,
         since: row.first_seen,
-        title: row.title
+        title: row.title,
+        top: row.top
       })
     }
     if (currentScan) {
