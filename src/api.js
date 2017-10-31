@@ -110,8 +110,8 @@ api.get('/', async (request) => {
   const count = request.queryString.count || 50
   const page = request.queryString.page || 1
   const name = request.queryString.name
-  const platform = request.queryString.platform
-  const articles = await getArticles(count, (page-1) * count, name, platform)
+  //const platform = request.queryString.platform
+  //const articles = await getArticles(count, (page-1) * count, name, platform)
   return renderPage("Welcome!")
 }, { success: { contentType: 'text/html'}});
 

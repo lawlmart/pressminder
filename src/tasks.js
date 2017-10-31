@@ -252,6 +252,23 @@ async function processKeywords(text) {
   })
 }
 
+export async function snapshot() {
+  const client = new Client()
+  await client.connect()
+
+  try {
+    const segment = await startSegment('snapshot')
+    
+    endSegment(segment)
+  }
+  catch (err) {
+    console.error(err)
+  } finally {
+    await client.end()
+  }
+}
+
+
 export async function processArticles(articles) {
   const client = new Client()
   await client.connect()
