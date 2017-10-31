@@ -62,26 +62,28 @@ const getArticles = async function(segment, count, offset, name, platform, times
     }
     const res = await client.query(query, vars)
     let currentScan = null
-    let articles = []
     for (const row of res.rows) {
       if (currentScan && currentScan.scanName != row.scan_name) {
+        console.log("adding scan " + JSON.stringify(currentScan))
         scans.push(currentScan)
         currentScan = null     
       }
       if (!currentScan) {
+        console.log("creating scan " + row.scan_name)
         currentScan = {
           articles: [],
           scan_name: row.scan_name,
           screenshot: row.screenshot
         }
       }
-      articles.push({
+      currentScan.articles.push({
         url: row.url,
         since: row.first_seen,
         title: row.title
       })
     }
     if (currentScan) {
+      console.log("adding scan " + JSON.stringify(currentScan))
       scans.push(currentScan)
     }
   }
