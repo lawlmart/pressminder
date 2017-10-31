@@ -16,10 +16,13 @@ exports.handler = async function(event, context) {
     await Promise.all(actions)
 
     console.log("Handler finished")
+    segment.addAnnotation("status", "ok");
     segment.close();
     context.succeed();
   } catch (err) {
     console.log("Handler error: " + err)
+    segment.addAnnotation("status", "error");
+    segment.addMetadata("error", err.toString());
     segment.close();
     context.fail(err)
   }
