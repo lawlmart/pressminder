@@ -3,7 +3,7 @@ import  AWSXRay from 'aws-xray-sdk'
 AWSXRay.enableManualMode()
 
 exports.handler = async function(event, context) {
-  const segment = new AWSXRay.Segment('handler');
+  const segment = new AWSXRay.Segment('pressminder-event-handler');
   try {
     const actions = []
     const events = parseEvents(event)
