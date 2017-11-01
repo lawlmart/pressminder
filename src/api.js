@@ -167,7 +167,7 @@ api.get('/v1/snapshot/{names}', async (request) => {
         WHERE scan_name = $1 ORDER BY $2 - timestamp ASC LIMIT 1', [name, timestamp])   
       } else {
         res = await client.query('SELECT articles, screenshot FROM snapshot \
-        WHERE scan_name = $1 ORDER BY timestamp ASC LIMIT 1', [name])
+        WHERE scan_name = $1 ORDER BY timestamp DESC LIMIT 1', [name])
       }
       if (res.rows.length) {
         output[name] = {

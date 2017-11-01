@@ -293,8 +293,9 @@ export async function snapshot(segment) {
   const client = new pg.Client()
   await client.connect()
   try {
-    const articles = await getArticles(segment)
-    for (let scan of articles) {
+    const scans = await getArticles(segment)
+    console.log("Snapshotting " + scans.length + " scans")
+    for (let scan of scans) {
       await client.query('INSERT INTO snapshot (timestamp, scan_name, screenshot, articles) VALUES (now(), $1, $2, $3)', 
         [scan.scan_name, scan.screenshot, JSON.stringify(scan.articles)])
     }    
