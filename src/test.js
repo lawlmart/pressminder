@@ -23,6 +23,10 @@ api.proxyRouter({
   pathParameters: {
     names: 'nyt,bbc'
   },
+  queryStringParameters: {
+    count: 10,
+    timestamp: '2017-10-30'
+  },
   requestContext: {
     resourcePath: '/v1/snapshot/{names}',
     httpMethod: 'GET'
