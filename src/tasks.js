@@ -20,7 +20,7 @@ async function log(name, message) {
   console.log(name + " - " + message)
 }
 
-export async function getArticles(segment, count, offset, name, platform, timestamp) {
+export async function getArticles(count, offset, name, platform, timestamp) {
   const scans = []
   const client = new pg.Client()
   await client.connect()
@@ -93,7 +93,7 @@ export async function getArticles(segment, count, offset, name, platform, timest
   return scans
 }
 
-export async function finishedScan(data, segment) {
+export async function finishedScan(data) {
   const client = new pg.Client()
   await client.connect()
   try {
@@ -143,7 +143,7 @@ export async function finishedScan(data, segment) {
   }
 }
 
-export async function retrieveArticle(input, segment) {
+export async function retrieveArticle(input) {
   if (!input.url) {
     console.log("No url provided to retrieve article!")
     return
@@ -239,7 +239,7 @@ async function checkSocial(url, client) {
                       [url, tweetTimestamps.length, earliest])
 }
 
-export async function checkArticles(segment) {
+export async function checkArticles() {
   
   const client = new pg.Client()
   await client.connect()
@@ -289,11 +289,11 @@ async function processKeywords(text) {
   })
 }
 
-export async function snapshot(segment) {
+export async function snapshot() {
   const client = new pg.Client()
   await client.connect()
   try {
-    const scans = await getArticles(segment)
+    const scans = await getArticles()
     console.log("Snapshotting " + scans.length + " scans")
     for (let scan of scans) {
       await client.query('INSERT INTO snapshot (timestamp, scan_name, screenshot, articles) VALUES (now(), $1, $2, $3)', 
@@ -308,7 +308,7 @@ export async function snapshot(segment) {
 }
 
 
-export async function processArticles(articles, segment) {
+export async function processArticles(articles) {
   const client = new pg.Client()
   await client.connect()
 

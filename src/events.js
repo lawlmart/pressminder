@@ -70,34 +70,31 @@ function makeMulti(f) {
   }
 }
 
-export async function executeEvents(name, payloads, segment) {
-  return new Promise((resolve, reject) => {
-    AWSXRay.captureAsyncFunc(name, async (subsegment) => {
-      let result
-      if (name == 'article') {
-        result = await tasks.processArticles(payloads, subsegment)
-      } else if (name == 'url') {
-        result = await makeMulti(tasks.retrieveArticle)(payloads, subsegment)
-      } else if (name == 'scan_complete') {
-        result = await makeMulti(tasks.finishedScan)(payloads, subsegment)
-      } else if (name == 'check') {
-        result = await tasks.checkArticles(subsegment)
-      } else if (name == 'snapshot') {
-        result = await tasks.snapshot(subsegment)
-      } else {
-        console.log("Unrecognized event: " + name)
-      }
-      subsegment.close();
-      resolve(result)
-    }, segment);
+export async function executeEvents(name, payloads) {
+  return new Promise(async (resolve, reject) => {
+    let result
+    if (name == 'article') {
+      result = await tasks.processArticles(payloads)
+    } else if (name == 'url') {
+      result = await makeMulti(tasks.retrieveArticle)(payloads)
+    } else if (name == 'scan_complete') {
+      result = await makeMulti(tasks.finishedScan)(payloads)
+    } else if (name == 'check') {
+      result = await tasks.checkArticles()
+    } else if (name == 'snapshot') {
+      result = await tasks.snapshot()
+    } else {
+      console.log("Unrecognized event: " + name)
+    }
+    resolve(result)
   })
 }
 
-export async function trigger(name, data, segment) {
+export async function trigger(name, data) {
   if (process.env.NODE_ENV == 'production') {
     return await sendToStream('pressminder', name, data)
   } else {
     console.log("Executing event " + name + " immediately")
-    return await executeEvents(name, [data], segment);
+    return await executeEvents(name, [data]);
   }
 }
