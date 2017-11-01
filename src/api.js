@@ -63,11 +63,6 @@ const getPlacements = async function(count, offset, name, timestamp) {
 }
 
 api.get('/', async (request) => {
-  const count = request.queryString.count || 50
-  const page = request.queryString.page || 1
-  const name = request.queryString.name
-  //const platform = request.queryString.platform
-  //const articles = await getArticles(count, (page-1) * count, name, platform)
   return renderPage("Welcome!")
 }, { success: { contentType: 'text/html'}});
 
@@ -153,7 +148,7 @@ api.get('/v1/now', async (request) => {
 
 api.get('/v1/snapshot/{names}', async (request) => {
   let output = {}
-
+  const count = request.queryString.count || 50
   const client = new pg.Client()
   await client.connect()
   try {
@@ -171,7 +166,7 @@ api.get('/v1/snapshot/{names}', async (request) => {
       }
       if (res.rows.length) {
         output[name] = {
-          articles: JSON.parse(res.rows[0].articles),
+          articles: JSON.parse(res.rows[0].articles).slice(0, count),
           screenshot: res.rows[0].screenshot,
         }
       }
