@@ -51,7 +51,9 @@ export async function getArticles(count, offset, name, platform, timestamp) {
       query += " AND scan.platform = $"  + (vars.length + 1).toString()
       vars.push(platform)
     } 
-    query += " GROUP BY placement.scan_name, scan.platform, placement.top, placement.url, version.title, version.timestamp, \
+    query += " GROUP BY placement.scan_name, scan.platform, placement.top, \
+    placement.left, placement.height, placement.width, placement.font_size, \
+    placement.url, placement.title, version.timestamp, \
     version.keywords, version.generated_keywords ORDER BY scan_name, top ASC"
     if (count) {
       query += " LIMIT $" + (vars.length + 1).toString()
