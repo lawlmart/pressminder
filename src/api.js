@@ -148,7 +148,7 @@ api.get('/v1/now', async (request) => {
 
 api.get('/v1/snapshot/{names}', async (request) => {
   let output = {}
-  const count = request.queryString.count || 50
+  const count = parseInt(request.queryString.count || 50)
   const client = new pg.Client()
   await client.connect()
   try {
