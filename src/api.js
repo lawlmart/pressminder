@@ -165,8 +165,9 @@ api.get('/v1/snapshot/{names}', async (request) => {
         WHERE scan_name = $1 ORDER BY timestamp DESC LIMIT 1', [name])
       }
       if (res.rows.length) {
+        let articles = JSON.parse(res.rows[0].articles)
         output[name] = {
-          articles: JSON.parse(res.rows[0].articles).slice(0, count),
+          articles: articles.slice(0, count),
           screenshot: res.rows[0].screenshot,
         }
       }
