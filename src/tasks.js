@@ -113,10 +113,10 @@ export async function finishedScan(data) {
         await client.query('INSERT INTO placement (link, started, new, title, top, "left", \
                             height, width, font_size, section, scan_id, scan_name) \
                             VALUES ($1, now(), TRUE, $2,  $3, $4, $5, $6, $7, $8, $9, $10) \
-                            ON CONFLICT (scan_name, link, title, top, font_size, width) DO UPDATE SET ended = NULL', 
+                            ON CONFLICT (scan_name, link, title, top, font_size, width) DO UPDATE SET ended=NULL, scan_id=$11', 
                             [placement.url.substring(0,500), placement.title.substring(0,500), placement.top, placement.left, 
                               placement.height, placement.width, placement.fontSize, 
-                              placement.section, scanId, data.name])
+                              placement.section, scanId, data.name, scanId])
       }
       await client.query('COMMIT')
     } catch (err) {

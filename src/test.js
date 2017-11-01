@@ -10,7 +10,6 @@ trigger('snapshot', {}).then(() => {
 
 })
 
-/*
 const api = require('./api')
 const context = {
   done: (err, result) => {
@@ -30,5 +29,4 @@ api.proxyRouter({
   },
 }, context)
 
-*/
 
