@@ -27,7 +27,8 @@ export async function getArticles(count, offset, name, platform, timestamp) {
   try {
     let vars = []
     let query = "SELECT MIN(placement.started) as first_seen, MAX(scan.screenshot) as screenshot, scan.platform, placement.scan_name, \
-    placement.top, placement.url, version.title, version.timestamp, version.keywords, \
+    placement.top, placement.left, placement.height, placement.width, placement.font_size, \
+    placement.url, placement.title, version.timestamp, version.keywords, \
     version.generated_keywords FROM placement, version, scan, (SELECT url, max(timestamp) as timestamp \
     FROM version GROUP BY url) v, \
     (SELECT placement.url, placement.scan_name, min(placement.top) as top FROM placement "
@@ -81,7 +82,11 @@ export async function getArticles(count, offset, name, platform, timestamp) {
         url: row.url,
         since: row.first_seen,
         title: row.title,
-        top: row.top
+        top: row.top,
+        left: row.left,
+        height: row.height,
+        width: row.width,
+        font_size: row.font_size
       })
     }
     if (currentScan) {
