@@ -232,7 +232,7 @@ export async function getVersions(url, client) {
     title: r.title,
     keyword: r.keywords,
     authors: r.authors,
-    timestamp: int(r.timestamp)
+    timestamp: parseInt(r.timestamp)
   }})
 }
 
