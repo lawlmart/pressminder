@@ -157,10 +157,10 @@ api.get('/v1/snapshot/{names}', async (request) => {
     for (let name of names) {
       let res
       if (timestamp) {
-        res = await client.query('SELECT articles, screenshot FROM snapshot \
+        res = await client.query('SELECT articles, screenshot, timestamp FROM snapshot \
         WHERE scan_name = $1 ORDER BY abs(extract (EPOCH from timestamp) - $2) ASC LIMIT 1', [name, parseInt(timestamp)])   
       } else {
-        res = await client.query('SELECT articles, screenshot FROM snapshot \
+        res = await client.query('SELECT articles, screenshot, timestamp FROM snapshot \
         WHERE scan_name = $1 ORDER BY timestamp DESC LIMIT 1', [name])
       }
       if (res.rows.length) {
@@ -168,6 +168,7 @@ api.get('/v1/snapshot/{names}', async (request) => {
         output[name] = {
           articles: articles.slice(0, count),
           screenshot: res.rows[0].screenshot,
+          timestamp: timestamp
         }
       }
     }
