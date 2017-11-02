@@ -168,7 +168,7 @@ api.get('/v1/snapshot/{names}', async (request) => {
         output[name] = {
           articles: articles.slice(0, count),
           screenshot: res.rows[0].screenshot,
-          timestamp: timestamp
+          timestamp: res.rows[0].timestamp
         }
       }
     }
