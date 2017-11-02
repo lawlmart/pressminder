@@ -222,7 +222,7 @@ export async function retrieveArticle(input) {
 }
 
 export async function getVersions(url, client) {
-  const res = await client.query("SELECT text, title, keywords, authors, timestamp FROM version \
+  const res = await client.query("SELECT text, title, keywords, authors, extract(EPOCH from timestamp) FROM version \
                                   WHERE url = $1 \
                                   ORDER BY timestamp ASC",
                                   [url])
