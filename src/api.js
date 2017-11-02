@@ -66,13 +66,6 @@ api.get('/', async (request) => {
   return renderPage("Welcome!")
 }, { success: { contentType: 'text/html'}});
 
-api.get('/vis1', async (request) => {
-  return {
-    start: 1509555600,
-    step: 3600
-  }
-});
-
 api.get('/v1/{timestamp}/publication', async (request) => {
   let publications = []
 
@@ -164,13 +157,13 @@ api.get('/v1/snapshot/{names}', async (request) => {
     for (let name of names) {
       let res
       if (timestamp) {
-        res = await client.query('SELECT articles, screenshot, timestamp FROM snapshot \
+        res = await client.query('SELECT articles_json as articles, screenshot, timestamp FROM snapshot \
         WHERE scan_name = $1 ORDER BY abs(extract (EPOCH from timestamp) - $2) ASC LIMIT 1', [name, parseInt(timestamp)])   
       } else {
-        res = await client.query('SELECT articles, screenshot, timestamp FROM snapshot \
+        res = await client.query('SELECT articles_json as articles, screenshot, timestamp FROM snapshot \
         WHERE scan_name = $1 ORDER BY timestamp DESC LIMIT 1', [name])
       }
-      if (res.rows.length) {
+      if (res.rows.length && res.rows[0].articles) {
         let articles = JSON.parse(res.rows[0].articles)
         output[name] = {
           articles: articles.slice(0, count),

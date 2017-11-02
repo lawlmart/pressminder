@@ -20,6 +20,17 @@ async function log(name, message) {
   console.log(name + " - " + message)
 }
 
+function scoreArticle(article) {
+  const size = height * width
+  const position = -1 * top + -.5 * left;
+  let sizePosition = size + position
+  if (sizePosition < 0) {
+    sizePosition = 0
+  }
+  const font = article.font_size / 16
+  return sizePosition * font
+}
+
 export async function getArticles(count, offset, name, platform, timestamp) {
   const scans = []
   const client = new pg.Client()
@@ -50,7 +61,7 @@ export async function getArticles(count, offset, name, platform, timestamp) {
     query += " GROUP BY placement.scan_name, scan.platform, placement.top, \
     placement.left, placement.height, placement.width, placement.font_size, \
     placement.url, placement.title, version.timestamp, \
-    version.keywords, version.generated_keywords ORDER BY scan_name, top ASC"
+    version.keywords, version.generated_keywords ORDER BY scan_name ASC"
     if (count) {
       query += " LIMIT $" + (vars.length + 1).toString()
       vars.push(count)
@@ -76,7 +87,7 @@ export async function getArticles(count, offset, name, platform, timestamp) {
       if (row.screenshot > currentScan.screenshot) {
         currentScan.screenshot = row.screenshot
       }
-      currentScan.articles.push({
+      const article = {
         url: row.url,
         since: row.first_seen,
         title: row.title,
@@ -85,7 +96,9 @@ export async function getArticles(count, offset, name, platform, timestamp) {
         height: row.height,
         width: row.width,
         font_size: row.font_size
-      })
+      }
+      article.score = scoreArticle(article)
+      currentScan.articles.push(article)
     }
     if (currentScan) {
       scans.push(currentScan)
@@ -307,8 +320,23 @@ export async function snapshot() {
     const scans = await getArticles()
     console.log("Snapshotting " + scans.length + " scans")
     for (let scan of scans) {
-      await client.query('INSERT INTO snapshot (timestamp, scan_name, screenshot, articles) VALUES (now(), $1, $2, $3)', 
-        [scan.scan_name, scan.screenshot, JSON.stringify(scan.articles)])
+      const articles = {}
+      let maxScore = 0
+      for (const a of scans.articles) {
+        if (a.score > maxScore) {
+          maxScore = a.score
+        }
+      }
+      let rank = 0
+      for (const a of scans.articles.sort((a,b) => a.score - b.score)) {
+        a.normalized_score = a.score / maxScore
+        a.rank = rank
+        rank += 1
+        articles[a.url] = a
+      }
+      await client.query('INSERT INTO snapshot (timestamp, scan_name, screenshot, articles_json) \
+                          VALUES (now(), $1, $2, $3)', 
+        [scan.scan_name, scan.screenshot, articles])
     }    
   }
   catch (err) {
