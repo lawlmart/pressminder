@@ -222,7 +222,7 @@ export async function retrieveArticle(input) {
 }
 
 export async function getVersions(url, client) {
-  const res = await client.query("SELECT text, title, keywords, authors FROM version \
+  const res = await client.query("SELECT text, title, keywords, authors, timestamp FROM version \
                                   WHERE url = $1 \
                                   ORDER BY timestamp ASC",
                                   [url])
@@ -230,7 +230,8 @@ export async function getVersions(url, client) {
     text: r.text,
     title: r.title,
     keyword: r.keywords,
-    authors: r.authors
+    authors: r.authors,
+    timestamp: r.timestamp
   }})
 }
 
