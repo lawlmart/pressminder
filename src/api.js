@@ -66,6 +66,13 @@ api.get('/', async (request) => {
   return renderPage("Welcome!")
 }, { success: { contentType: 'text/html'}});
 
+api.get('/vis1', async (request) => {
+  return {
+    start: 1509555600,
+    step: 3600
+  }
+});
+
 api.get('/v1/{timestamp}/publication', async (request) => {
   let publications = []
 
