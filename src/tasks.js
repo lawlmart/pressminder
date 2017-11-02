@@ -225,7 +225,7 @@ export async function getVersions(url, client) {
   const res = await client.query("SELECT text, title, keywords, authors, extract(EPOCH from timestamp) as timestamp \
                                   FROM version \
                                   WHERE url = $1 \
-                                  ORDER BY timestamp ASC",
+                                  ORDER BY timestamp DESC",
                                   [url])
   return res.rows.map(r => { return {
     text: r.text,
