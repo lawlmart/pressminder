@@ -43,14 +43,14 @@ export async function getArticles(count, offset, name, platform, timestamp) {
     placement.top, placement.left, placement.height, placement.width, placement.font_size, \
     placement.url, placement.title, version.timestamp, version.keywords, \
     version.generated_keywords FROM placement, version, scan, (SELECT url, max(timestamp) as timestamp \
-    FROM version GROUP BY url) v WHERE "
+    FROM version GROUP BY url) v WHERE v.url = placement.url AND version.timestamp = v.timestamp AND scan.id = placement.scan_id "
     if (timestamp) {
-      query += "EXTRACT(epoch FROM COALESCE(placement.ended, now())) >= $" + (vars.length + 1).toString() 
+      query += " AND EXTRACT(epoch FROM COALESCE(placement.ended, now())) >= $" + (vars.length + 1).toString() 
       vars.push(timestamp)
       query += " AND EXTRACT(epoch FROM placement.started) <= $" + (vars.length + 1).toString()
       vars.push(timestamp)
     } else {
-      query += "placement.ended IS NULL"
+      query += " AND placement.ended IS NULL"
     }
     if (name) {
       query += " AND placement.scan_name = $" + (vars.length + 1).toString()
