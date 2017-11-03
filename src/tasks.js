@@ -106,9 +106,6 @@ export async function getArticles(timestamp, count, offset, name, platform) {
           screenshot: row.screenshot
         }
       }
-      if (row.screenshot > currentScan.screenshot) {
-        currentScan.screenshot = row.screenshot
-      }
       const article = {
         url: row.url,
         since: row.started,
