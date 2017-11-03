@@ -95,6 +95,7 @@ export async function executeEvents(name, payloads) {
 
 export async function trigger(name, data) {
   if (process.env.NODE_ENV == 'production') {
+    console.log("Sending event " + name + " to stream")
     return await sendToStream('pressminder', name, data)
   } else {
     console.log("Executing event " + name + " immediately")
