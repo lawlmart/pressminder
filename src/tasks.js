@@ -62,8 +62,10 @@ export async function getArticles(timestamp, count, offset, name, platform) {
     let query = "SELECT placement.started, scan.screenshot, scan.platform, placement.scan_name, \
     placement.top, placement.left, placement.height, placement.width, placement.font_size, \
     placement.url, placement.title, version.timestamp, version.keywords, \
-    version.generated_keywords FROM placement, version, scan, (SELECT url, max(timestamp) as timestamp \
-    FROM version GROUP BY url) v WHERE v.url = placement.url AND version.timestamp = v.timestamp AND scan.id = placement.scan_id "
+    version.generated_keywords \
+    FROM placement, version, scan, \
+    (SELECT url, max(timestamp) as timestamp FROM version GROUP BY url) v \
+    WHERE v.url = placement.url AND version.timestamp = v.timestamp AND scan.id = placement.scan_id "
     if (timestamp) {
       query += " AND EXTRACT(epoch FROM COALESCE(placement.ended, now())) >= $" + (vars.length + 1).toString() 
       vars.push(timestamp)
@@ -80,10 +82,7 @@ export async function getArticles(timestamp, count, offset, name, platform) {
       query += " AND scan.platform = $"  + (vars.length + 1).toString()
       vars.push(platform)
     } 
-    query += " GROUP BY placement.scan_name, scan.platform, placement.top, \
-    placement.left, placement.height, placement.width, placement.font_size, \
-    placement.url, placement.title, version.timestamp, \
-    version.keywords, version.generated_keywords ORDER BY scan_name ASC"
+    query += " ORDER BY scan_name ASC"
     if (count) {
       query += " LIMIT $" + (vars.length + 1).toString()
       vars.push(count)
