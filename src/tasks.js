@@ -53,7 +53,7 @@ function scoreScan(scan) {
   }
 }
 
-export async function getArticles(count, offset, name, platform, timestamp) {
+export async function getArticles(timestamp, count, offset, name, platform) {
   const scans = []
   const client = new pg.Client()
   await client.connect()
@@ -339,11 +339,13 @@ async function processKeywords(text) {
   })
 }
 
-export async function snapshot() {
+export async function snapshot(input) {
+  input = input || {}
+  const timestamp = input.timestamp || null
   const client = new pg.Client()
   await client.connect()
   try {
-    const scans = await getArticles()
+    const scans = await getArticles(timestamp)
     console.log("Snapshotting " + scans.length + " scans")
     for (let scan of scans) {
       const articles = {}
@@ -364,9 +366,17 @@ export async function snapshot() {
         rank += 1
         articles[a.url] = a
       }
-      await client.query('INSERT INTO snapshot (timestamp, scan_name, screenshot, articles_json) \
-                          VALUES (now(), $1, $2, $3)', 
-        [scan.scan_name, scan.screenshot, articles])
+      let query
+      if (timestamp) {
+        await client.query('INSERT INTO snapshot (timestamp, scan_name, screenshot, articles_json) \
+                            VALUES (now(), $1, $2, $3)', 
+                            [scan.scan_name, scan.screenshot, articles])
+      } else {
+        await client.query('INSERT INTO snapshot (timestamp, scan_name, screenshot, articles_json) \
+                            VALUES ($1, $2, $3, $4)', 
+                            [new Date(timestamp * 1000), scan.scan_name, scan.screenshot, articles])
+      }
+      
     }    
   }
   catch (err) {

@@ -6,10 +6,10 @@ console.log("Running tests")
 process.on('unhandledRejection', r => console.log(r));
 
 
-trigger('snapshot', {}).then(() => {
+trigger('snapshot', {timestamp: 1509733293}).then(() => {
 
 })
-
+/*
 const api = require('./api')
 const context = {
   done: (err, result) => {
@@ -28,5 +28,6 @@ api.proxyRouter({
     httpMethod: 'GET'
   },
 }, context)
+*/
 
 

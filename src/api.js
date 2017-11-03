@@ -140,9 +140,7 @@ api.get('/v1/article/{id}', async (request) => {
 });
 
 api.get('/v1/now', async (request) => {
-  const segment = new AWSXRay.Segment('handler');
-  const articles = await getArticles(segment)
-  segment.close();
+  const articles = await getArticles()
   return articles
 })
 

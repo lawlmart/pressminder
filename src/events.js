@@ -61,10 +61,11 @@ export function parseEvents(event) {
 
 
 function makeMulti(f) {
-  return async (inputs, segment) => {
+  return async (inputs) => {
     const promises = []
+    inputs = inputs || [null]
     for (const input of inputs) {
-      promises.push(f(input, segment))
+      promises.push(f(input))
     }
     return Promise.all(promises)
   }
@@ -82,7 +83,7 @@ export async function executeEvents(name, payloads) {
     } else if (name == 'check') {
       result = await tasks.checkArticles()
     } else if (name == 'snapshot') {
-      result = await tasks.snapshot()
+      result = await makeMulti(tasks.snapshot)(payloads)
     } else {
       console.log("Unrecognized event: " + name)
     }
