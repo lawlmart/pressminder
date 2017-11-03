@@ -257,7 +257,9 @@ export async function retrieveArticle(input) {
 }
 
 export async function getVersions(url, client) {
-  const res = await client.query("SELECT text, title, keywords, authors, extract(EPOCH from timestamp) as timestamp \
+  const res = await client.query("SELECT text, title, keywords, authors, \
+                                  extract(EPOCH from timestamp) as timestamp,  \
+                                  extract(EPOCH from published) as published \
                                   FROM version \
                                   WHERE url = $1 \
                                   ORDER BY timestamp DESC",
@@ -267,7 +269,8 @@ export async function getVersions(url, client) {
     title: r.title,
     keyword: r.keywords,
     authors: r.authors,
-    timestamp: parseInt(r.timestamp)
+    timestamp: parseInt(r.timestamp),
+    published: r.published
   }})
 }
 
