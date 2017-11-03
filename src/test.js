@@ -10,27 +10,5 @@ trigger('snapshot', {}).then(() => {
 
 })
 
-const api = require('./api')
-const context = {
-  done: (err, result) => {
-    console.log("Request finished: " + JSON.stringify(result))
-  },
-  fail: (err) => {
-    console.error(err)
-  }
-}
-api.proxyRouter({
-  pathParameters: {
-    names: 'nyt,bbc'
-  },
-  queryStringParameters: {
-    count: 10,
-    timestamp: '2017-10-30'
-  },
-  requestContext: {
-    resourcePath: '/v1/snapshot/{names}',
-    httpMethod: 'GET'
-  },
-}, context)
 
 
