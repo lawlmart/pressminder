@@ -20,17 +20,37 @@ async function log(name, message) {
   console.log(name + " - " + message)
 }
 
-function scoreArticle(article) {
-  const size = article.height * article.width
-  const position = -1 * article.top + -.5 * article.left;
-  let sizePosition = size + position
-  if (sizePosition < 0) {
-    sizePosition = 0
+function scoreScan(scan) {
+  let left = 9999999;
+  let right = 0;
+  let bottom = 0;
+  let top = 99999999;
+  for (const article of scan.articles) {
+    if (article.left < left) {
+      left = article.left
+    }
+    if (article.top < top) {
+      top = article.top
+    }
+    if (article.left + article.width > right) {
+      right = article.left + article.width
+    }
+    if (article.top + article.height > bottom) {
+      bottom = article.top + article.height
+    }
   }
-  const font = article.font_size / 16
-  const score = sizePosition * font
-  console.log("Calculated score " + score + " for article " + article.url)
-  return score
+
+  console.log(`Analyzed scan ${scan.scan_name} (top: ${top}, bottom: ${bottom}, left: ${left}, right ${right}`)
+
+  for (const article of scan.articles) {
+    const topScore = 1 - (article.top - top) / (bottom - top)
+    const leftScore = 1 - (article.left - left) / (right - left)
+    const sizeScore = article.height * article.width / ((bottom - top) * (right - left))
+    const fontScore = article.font_size / 32
+    const score = 10 * topScore + 1 * leftScore + 5 * sizeScore + 5 * fontScore
+    console.log(`Calculated score ${score} (top: ${topScore}, leftScore: ${leftScore}, sizeScore: ${sizeScore}, fontScore: ${fontScore} for ${article.url}`)
+    article.score = score
+  }
 }
 
 export async function getArticles(count, offset, name, platform, timestamp) {
@@ -100,11 +120,14 @@ export async function getArticles(count, offset, name, platform, timestamp) {
         width: row.width,
         font_size: row.font_size
       }
-      article.score = scoreArticle(article)
       currentScan.articles.push(article)
     }
     if (currentScan) {
       scans.push(currentScan)
+    }
+
+    for (const scan of scans) {
+      scoreScan(scan)
     }
   }
   catch (err) {
