@@ -175,7 +175,7 @@ api.get('/v1/snapshot/{names}', async (request) => {
           articles.push(article)
         }
         articles.sort((a,b) => {
-          return a.rank - b.rank
+          return b.rank - a.rank
         })
         output[name].articles = articles
       }
