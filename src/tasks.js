@@ -339,6 +339,10 @@ async function processKeywords(text) {
   })
 }
 
+export async function snapshots(start, end, interval) {
+  console.log(`Creating snapshots from ${start} to ${end} at ${interval}`)
+}
+
 export async function snapshot(input) {
   input = input || {}
   const timestamp = input.timestamp || null

@@ -82,6 +82,8 @@ export async function executeEvents(name, payloads) {
       result = await makeMulti(tasks.finishedScan)(payloads)
     } else if (name == 'check') {
       result = await tasks.checkArticles()
+    } else if (name == 'snapshots') {
+      result = await makeMulti(tasks.snapshots)(payloads)
     } else if (name == 'snapshot') {
       result = await makeMulti(tasks.snapshot)(payloads)
     } else {
