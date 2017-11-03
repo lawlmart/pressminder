@@ -342,6 +342,12 @@ async function processKeywords(text) {
 export async function snapshots(input) {
   const { start, end, interval } = input
   console.log(`Creating snapshots from ${start} to ${end} at ${interval}`)
+
+  for (let i = start; i <= end; i += interval) {
+    await trigger('snapshot', {
+      timestamp: i
+    })
+  }
 }
 
 export async function snapshot(input) {
