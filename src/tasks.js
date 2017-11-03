@@ -28,7 +28,9 @@ function scoreArticle(article) {
     sizePosition = 0
   }
   const font = article.font_size / 16
-  return sizePosition * font
+  const score = sizePosition * font
+  console.log("Calculated score " + score + " for article " + article.url)
+  return score
 }
 
 export async function getArticles(count, offset, name, platform, timestamp) {
@@ -70,6 +72,7 @@ export async function getArticles(count, offset, name, platform, timestamp) {
       query += " OFFSET $" + (vars.length + 1).toString()
       vars.push(offset)
     }
+    console.log("Running " + query + " " + JSON.stringify(vars))
     const res = await client.query(query, vars)
     let currentScan = null
     for (const row of res.rows) {
