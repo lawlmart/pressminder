@@ -48,7 +48,7 @@ function scoreScan(scan) {
     const sizeScore = article.height * article.width / ((bottom - top) * (right - left))
     const fontScore = article.font_size / 32
     const score = 10 * topScore + 1 * leftScore + 3 * sizeScore + 3 * fontScore
-    console.log(`Calculated score ${score} (top: ${topScore}, leftScore: ${leftScore}, sizeScore: ${sizeScore}, fontScore: ${fontScore} for ${article.url}`)
+    //console.log(`Calculated score ${score} (top: ${topScore}, leftScore: ${leftScore}, sizeScore: ${sizeScore}, fontScore: ${fontScore} for ${article.url}`)
     article.score = score
   }
 }
@@ -345,6 +345,7 @@ export async function snapshot(input) {
   const client = new pg.Client()
   await client.connect()
   try {
+    console.log("Getting scans on " + timestamp)
     const scans = await getArticles(timestamp)
     console.log("Snapshotting " + scans.length + " scans")
     for (let scan of scans) {
