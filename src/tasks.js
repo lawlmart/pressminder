@@ -339,7 +339,8 @@ async function processKeywords(text) {
   })
 }
 
-export async function snapshots(start, end, interval) {
+export async function snapshots(input) {
+  const { start, end, interval } = input
   console.log(`Creating snapshots from ${start} to ${end} at ${interval}`)
 }
 
