@@ -331,7 +331,10 @@ export async function snapshot() {
         }
       }
       let rank = 0
-      for (const a of scans.articles.sort((a,b) => a.score - b.score)) {
+      scans.articles.sort((a,b) => {
+        return a.score - b.score
+      })
+      for (const a of scans.articles) {
         a.normalized_score = a.score / maxScore
         a.rank = rank
         rank += 1
