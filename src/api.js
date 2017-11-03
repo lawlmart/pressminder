@@ -164,12 +164,20 @@ api.get('/v1/snapshot/{names}', async (request) => {
         WHERE scan_name = $1 ORDER BY timestamp DESC LIMIT 1', [name])
       }
       if (res.rows.length && res.rows[0].articles) {
-        let articles = JSON.parse(res.rows[0].articles)
         output[name] = {
-          articles: articles.slice(0, count),
           screenshot: res.rows[0].screenshot,
           timestamp: res.rows[0].timestamp
         }
+        const articles = []
+        for (const url in res.rows[0].articles) {
+          const article = res.rows[0].articles[url]
+          article.url = url
+          articles.push(article)
+        }
+        articles.sort((a,b) => {
+          return a.rank - b.rank
+        })
+        output[name].articles = articles
       }
     }
   }
