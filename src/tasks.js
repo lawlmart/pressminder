@@ -59,30 +59,23 @@ export async function getArticles(timestamp, count, offset, name, platform) {
   await client.connect()
   try {
     let vars = []
-    let query = "SELECT placement.started, scan.screenshot, scan.platform, placement.scan_name, \
+    let query = "SELECT placement.started, placement.scan_name, \
     placement.top, placement.left, placement.height, placement.width, placement.font_size, \
-    placement.url, placement.title, version.timestamp, version.keywords, \
-    version.generated_keywords \
-    FROM placement, version, scan, \
-    (SELECT url, max(timestamp) as timestamp FROM version GROUP BY url) v \
-    WHERE v.url = placement.url AND version.timestamp = v.timestamp AND scan.id = placement.scan_id "
+    placement.url, placement.title \
+    FROM placement WHERE"
     if (timestamp) {
-      query += " AND EXTRACT(epoch FROM COALESCE(placement.ended, now())) >= $" + (vars.length + 1).toString() 
-      vars.push(timestamp)
-      query += " AND EXTRACT(epoch FROM placement.started) <= $" + (vars.length + 1).toString()
-      vars.push(timestamp)
+      query += " COALESCE(placement.ended, now()) >= $" + (vars.length + 1).toString() 
+      vars.push(new Date(timestamp * 1000)) 
+      query += " AND placement.started <= $" + (vars.length + 1).toString()
+      vars.push(new Date(timestamp * 1000)) 
     } else {
-      query += " AND placement.ended IS NULL"
+      query += " placement.ended IS NULL"
     }
     if (name) {
       query += " AND placement.scan_name = $" + (vars.length + 1).toString()
       vars.push(name)
     } 
-    if (platform) {
-      query += " AND scan.platform = $"  + (vars.length + 1).toString()
-      vars.push(platform)
-    } 
-    query += " ORDER BY scan_name ASC"
+    query += " ORDER BY placement.scan_name ASC"
     if (count) {
       query += " LIMIT $" + (vars.length + 1).toString()
       vars.push(count)
@@ -100,10 +93,21 @@ export async function getArticles(timestamp, count, offset, name, platform) {
         currentScan = null     
       }
       if (!currentScan) {
+        const scanName = row.scan_name
+        let scanRes
+        if (timestamp) {
+          scanRes = await client.query("SELECT screenshot FROM scan WHERE \
+            timestamp <= $1 AND name = $2 ORDER BY timestamp DESC LIMIT 1", 
+            [new Date(timestamp), scanName])
+        } else {
+          scanRes = await client.query("SELECT screenshot FROM scan WHERE \
+            name = $1 ORDER BY timestamp DESC LIMIT 1", [scanName])
+        }
+        let screenshot = scanRes.rows.length ? scanRes.rows[0].screenshot : null
         currentScan = {
           articles: [],
-          scan_name: row.scan_name,
-          screenshot: row.screenshot
+          scan_name: scanName,
+          screenshot: screenshot
         }
       }
       const article = {

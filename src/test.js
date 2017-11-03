@@ -6,7 +6,7 @@ console.log("Running tests")
 process.on('unhandledRejection', r => console.log(r));
 
 
-trigger('snapshot', {timestamp: 1409733293}).then(() => {
+trigger('snapshot', {timestamp: 1509733293}).then(() => {
 
 })
 /*
