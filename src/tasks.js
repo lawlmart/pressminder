@@ -21,8 +21,8 @@ async function log(name, message) {
 }
 
 function scoreArticle(article) {
-  const size = height * width
-  const position = -1 * top + -.5 * left;
+  const size = article.height * article.width
+  const position = -1 * article.top + -.5 * article.left;
   let sizePosition = size + position
   if (sizePosition < 0) {
     sizePosition = 0
