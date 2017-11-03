@@ -59,7 +59,7 @@ export async function getArticles(timestamp, count, offset, name, platform) {
   await client.connect()
   try {
     let vars = []
-    let query = "SELECT MIN(placement.started) as first_seen, MAX(scan.screenshot) as screenshot, scan.platform, placement.scan_name, \
+    let query = "SELECT placement.started, scan.screenshot, scan.platform, placement.scan_name, \
     placement.top, placement.left, placement.height, placement.width, placement.font_size, \
     placement.url, placement.title, version.timestamp, version.keywords, \
     version.generated_keywords FROM placement, version, scan, (SELECT url, max(timestamp) as timestamp \
@@ -112,7 +112,7 @@ export async function getArticles(timestamp, count, offset, name, platform) {
       }
       const article = {
         url: row.url,
-        since: row.first_seen,
+        since: row.started,
         title: row.title,
         top: row.top,
         left: row.left,
