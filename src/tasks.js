@@ -374,12 +374,12 @@ export async function snapshot(input) {
       let query
       if (timestamp) {
         await client.query('INSERT INTO snapshot (timestamp, scan_name, screenshot, articles_json) \
-                            VALUES (now(), $1, $2, $3)', 
-                            [scan.scan_name, scan.screenshot, articles])
+        VALUES ($1, $2, $3, $4)', 
+        [new Date(timestamp * 1000), scan.scan_name, scan.screenshot, articles]) 
       } else {
         await client.query('INSERT INTO snapshot (timestamp, scan_name, screenshot, articles_json) \
-                            VALUES ($1, $2, $3, $4)', 
-                            [new Date(timestamp * 1000), scan.scan_name, scan.screenshot, articles])
+        VALUES (now(), $1, $2, $3)', 
+        [scan.scan_name, scan.screenshot, articles])
       }
       
     }    
