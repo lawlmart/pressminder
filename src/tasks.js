@@ -98,7 +98,7 @@ export async function getArticles(timestamp, count, offset, name, platform) {
         if (timestamp) {
           scanRes = await client.query("SELECT screenshot FROM scan WHERE \
             timestamp <= $1 AND name = $2 ORDER BY timestamp DESC LIMIT 1", 
-            [new Date(timestamp), scanName])
+            [new Date(timestamp * 1000), scanName])
         } else {
           scanRes = await client.query("SELECT screenshot FROM scan WHERE \
             name = $1 ORDER BY timestamp DESC LIMIT 1", [scanName])
