@@ -47,7 +47,7 @@ function scoreScan(scan) {
     const leftScore = 1 - (article.left - left) / (right - left)
     const sizeScore = article.height * article.width / ((bottom - top) * (right - left))
     const fontScore = article.font_size / 32
-    const score = 15 * topScore + 3 * leftScore + 5 * sizeScore + 10 * fontScore
+    const score = 10 * topScore + 3 * leftScore + 3 * sizeScore + 3 * fontScore
     console.log(`Calculated score ${score} (top: ${topScore}, leftScore: ${leftScore}, sizeScore: ${sizeScore}, fontScore: ${fontScore} for ${article.url}`)
     article.score = score
   }
