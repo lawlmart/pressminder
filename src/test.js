@@ -6,7 +6,7 @@ console.log("Running tests")
 process.on('unhandledRejection', r => console.log(r));
 
 
-trigger('url', {url: 'https://www.washingtonpost.com/world/stricken-us-destroyer-arrives-in-singapore-after-collision-10-sailors-missing/2017/08/21/8ad075b0-8646-11e7-a50f-e0d4e6ec070a_story.html?utm_term=.a322f3f3b33e'}).then(() => {
+trigger('url', {url: 'https://www.nytimes.com/2017/11/03/podcasts/the-daily/hate-crime-damien-rodriguez-marine.html?pgtype=Homepage&region=top-news&module=second-column-region&clickSource=story-heading&WT.nav=top-news&action=click'}).then(() => {
 
 })
 /*
