@@ -195,21 +195,28 @@ export async function retrieveArticle(input) {
   }
   try {
     log(input.url, "Requesting desktop site")
-    const lazy = unfluff.lazy(await request({
+    const rawDesktop = await request({
       uri: input.url,
       headers: {
         "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.90 Safari/537.36",
         referer: "https://www.google.com/"
       }
-    }))
+    })
+    const lazy = unfluff.lazy(rawDesktop)
 
-    const authors =  _(lazy.author())
+    let authors =  _(lazy.author())
                     .flatMap(a => a ? a.split(', ') : [])
                     .flatMap(a => a ? a.split(' and ') : [])
                     .map(a => a.trim())
                     .filter(x => x.indexOf('.com') === -1)
                     .filter(x => x.indexOf('.www') === -1)
                     .value()
+
+    const wpAuthors = rawDesktop.match(/wp_meta_data\.author=([^;]*);/g)
+    if (wpAuthors.length) {
+      authors = JSON.parse(wpAuthors[0].replace("wp_meta_data.author=", "").replace(";", ""))
+      log(input.url, `Found WP Authors ${authors}`)
+    }
 
     const output = {
       authors,
