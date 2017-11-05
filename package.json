@@ -16,6 +16,7 @@
     "claudia-api-builder": "^2.5.1",
     "iopipe": "^1.0.0",
     "lodash": "^4.17.4",
+    "metascraper": "^1.0.7",
     "moment": "^2.18.1",
     "nlcst-to-string": "^2.0.1",
     "pg": "^7.1.0",

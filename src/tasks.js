@@ -203,6 +203,7 @@ export async function retrieveArticle(input) {
       }
     })
     const lazy = unfluff.lazy(rawDesktop)
+    
 
     let authors =  _(lazy.author())
                     .flatMap(a => a ? a.split(', ') : [])
