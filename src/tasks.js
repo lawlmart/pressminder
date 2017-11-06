@@ -221,7 +221,7 @@ export async function retrieveArticle(input) {
 
     const output = {
       authors,
-      keywords: (lazy.keywords() || "").split(',').filter(k => k.length),
+      keywords: (lazy.keywords() || "").split(',').map(k => k.split(';')).filter(k => k.length),
       title: lazy.title(),
       url: lazy.canonicalLink(),
       published: chrono.parseDate(lazy.date()),
