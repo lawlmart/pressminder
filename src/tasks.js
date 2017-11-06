@@ -255,6 +255,7 @@ export async function retrieveArticle(input) {
 
       const lazyMobile = unfluff.lazy(rawMobile)
       output.text = lazyMobile.text()
+      output.videos = lazyMobile.videos()
       output.image = lazyMobile.image()
       output.tags = lazyMobile.tags()
 
@@ -429,10 +430,12 @@ export async function processArticles(articles) {
         if (!versions.length || versions.slice(-1)[0].text != article.text) {
           const generatedKeywords = await processKeywords(article.text)
           console.log(generatedKeywords)
-          await client.query('INSERT INTO version (url, text, title, links, authors, keywords, published, generated_keywords) \
+          await client.query('INSERT INTO version (url, text, title, links, authors, \
+                          keywords, published, generated_keywords, image, videos) \
                           VALUES ($1, $2, $3, $4, $5, $6, $7, $8)', 
                           [article.url, article.text, article.title, article.links, 
-                            article.authors, article.keywords, article.published, generatedKeywords])
+                            article.authors, article.keywords, article.published, generatedKeywords,
+                            article.image, article.videos])
           log(article.url, "Saved new version")
         }
       }
