@@ -5,10 +5,10 @@ console.log("Running tests")
 
 process.on('unhandledRejection', r => console.log(r));
 
+trigger('snapshot')
+/*trigger('url', {url: 'https://www.nytimes.com/2017/11/03/podcasts/the-daily/hate-crime-damien-rodriguez-marine.html?pgtype=Homepage&region=top-news&module=second-column-region&clickSource=story-heading&WT.nav=top-news&action=click'}).then(() => {
 
-trigger('url', {url: 'https://www.nytimes.com/2017/11/03/podcasts/the-daily/hate-crime-damien-rodriguez-marine.html?pgtype=Homepage&region=top-news&module=second-column-region&clickSource=story-heading&WT.nav=top-news&action=click'}).then(() => {
-
-})
+})*/
 /*
 const api = require('./api')
 const context = {

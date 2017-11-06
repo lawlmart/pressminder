@@ -110,6 +110,7 @@ export async function getArticles(timestamp, count, offset, name, platform) {
           screenshot: screenshot
         }
       }
+
       const article = {
         url: row.url,
         since: row.started,
@@ -120,6 +121,13 @@ export async function getArticles(timestamp, count, offset, name, platform) {
         width: row.width,
         font_size: row.font_size
       }
+
+      const versionRes = await client.query("SELECT keywords FROM version WHERE \
+      url = $1 ORDER BY timestamp DESC LIMIT 1", [row.url])
+      if (versionRes.rows.length) {
+        article.keywords = versionRes.rows[0].keywords
+      }
+
       currentScan.articles.push(article)
     }
     if (currentScan) {
