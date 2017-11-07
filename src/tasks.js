@@ -440,7 +440,7 @@ export async function processArticles(articles) {
           console.log(generatedKeywords)
           await client.query('INSERT INTO version (url, text, title, links, authors, \
                           keywords, published, generated_keywords, image, videos) \
-                          VALUES ($1, $2, $3, $4, $5, $6, $7, $8)', 
+                          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)', 
                           [article.url, article.text, article.title, article.links, 
                             article.authors, article.keywords, article.published, generatedKeywords,
                             article.image, article.videos])
